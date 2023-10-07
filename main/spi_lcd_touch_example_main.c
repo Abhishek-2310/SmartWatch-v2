@@ -62,7 +62,8 @@ static const char * mainTag = "app_main";
  **********************/
 static void guiTask(void *pvParameter);
 // extern void example_lvgl_demo_ui(lv_disp_t *disp);
-extern void display_time(void);
+extern void get_ntp_time(void);
+extern void get_weather_update(void);
 extern void lv_task_modes(void);
 
 /**********************
@@ -251,6 +252,8 @@ static void guiTask(void *pvParameter)
     ESP_LOGI(guiTag, "Demo starts");
     // example_lvgl_demo_ui(disp);
     // display_time();
+    get_ntp_time();
+    get_weather_update();
     lv_task_modes();
 
     while (1) 

@@ -11,7 +11,6 @@
 #include "esp_system.h"
 
 #include "esp_http_client.h"
-#include "connect_wifi.h"
 #include <cJSON.h>
 
 static const char *TAG = "display_weather";
