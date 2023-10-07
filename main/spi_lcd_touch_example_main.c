@@ -21,16 +21,22 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 
+/**********************
+ *   ESP LOG TAGS
+ **********************/
 static const char * guiTag = "guiTask";
 static const char * mainTag = "app_main";
 
+/**********************
+ *      MACROS
+ **********************/
 // Using SPI2 in the example
 #define LCD_HOST  SPI2_HOST
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define EXAMPLE_LCD_PIXEL_CLOCK_HZ     (20 * 1000 * 1000)
+#define EXAMPLE_LCD_PIXEL_CLOCK_HZ     (40 * 1000 * 1000)
 #define EXAMPLE_LCD_BK_LIGHT_ON_LEVEL  1
 #define EXAMPLE_LCD_BK_LIGHT_OFF_LEVEL !EXAMPLE_LCD_BK_LIGHT_ON_LEVEL
 #define EXAMPLE_PIN_NUM_SCLK           14
@@ -49,13 +55,19 @@ static const char * mainTag = "app_main";
 #define EXAMPLE_LCD_CMD_BITS           8
 #define EXAMPLE_LCD_PARAM_BITS         8
 
-#define EXAMPLE_LVGL_TICK_PERIOD_MS    2
+#define EXAMPLE_LVGL_TICK_PERIOD_MS    1
 
-
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
 static void guiTask(void *pvParameter);
-extern void example_lvgl_demo_ui(lv_disp_t *disp);
+// extern void example_lvgl_demo_ui(lv_disp_t *disp);
 extern void display_time(void);
+extern void lv_task_modes(void);
 
+/**********************
+ *  STATIC FUNCTIONS
+ **********************/
 static bool example_notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
     lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
@@ -184,7 +196,7 @@ static void guiTask(void *pvParameter)
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = EXAMPLE_PIN_NUM_LCD_RST,
-        .rgb_endian = LCD_RGB_ENDIAN_BGR,
+        .rgb_endian = LCD_RGB_ENDIAN_RGB,
         .bits_per_pixel = 16,
     };
 
@@ -223,7 +235,7 @@ static void guiTask(void *pvParameter)
     disp_drv.drv_update_cb = example_lvgl_port_update_callback;
     disp_drv.draw_buf = &disp_buf;
     disp_drv.user_data = panel_handle;
-    lv_disp_t *disp = lv_disp_drv_register(&disp_drv);
+    lv_disp_drv_register(&disp_drv);
 
     ESP_LOGI(guiTag, "Install LVGL tick timer");
     // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
@@ -236,20 +248,22 @@ static void guiTask(void *pvParameter)
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
     
 
-    ESP_LOGI(guiTag, "Display LVGL Meter Widget");
+    ESP_LOGI(guiTag, "Demo starts");
     // example_lvgl_demo_ui(disp);
-    display_time();
+    // display_time();
+    lv_task_modes();
 
-    while (1) {
+    while (1) 
+    {
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance
         vTaskDelay(pdMS_TO_TICKS(10));
 
         if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) 
         {
+            // The task running lv_timer_handler should have lower priority than that running `lv_tick_inc`
             lv_timer_handler();
             xSemaphoreGive(xGuiSemaphore);
         }
-        // The task running lv_timer_handler should have lower priority than that running `lv_tick_inc`
-        // lv_timer_handler();
+       
     }
 }
