@@ -145,7 +145,7 @@ static void lv_display_time_create(lv_obj_t * parent)
 	lv_obj_t *label_time = lv_label_create(parent);
     
     lv_style_set_text_font(&style_time, &lv_font_montserrat_48); 
-    lv_style_set_text_color(&style_time, lv_palette_main(LV_PALETTE_YELLOW));
+    lv_style_set_text_color(&style_time, lv_palette_main(LV_PALETTE_LIGHT_BLUE));
     lv_style_set_text_letter_space(&style_time, 5);
 
     lv_obj_add_style(label_time, &style_time, 0);
@@ -173,7 +173,7 @@ static void lv_display_time_create(lv_obj_t * parent)
     lv_obj_t *label_date = lv_label_create(parent);
 
     lv_style_set_text_font(&style_date, &lv_font_montserrat_48); 
-    lv_style_set_text_color(&style_date, lv_palette_main(LV_PALETTE_YELLOW));
+    lv_style_set_text_color(&style_date, lv_palette_main(LV_PALETTE_LIGHT_BLUE));
     lv_style_set_text_letter_space(&style_date, 2);
 
     lv_obj_add_style(label_date, &style_date, 0);
@@ -192,7 +192,7 @@ static void lv_display_weather_create(lv_obj_t * parent)
 
     lv_obj_clean(parent);
 
-    char weather_temp_buffer[20];
+    char weather_temp_buffer[60];
     char weather_pressure_buffer[20];
     char weather_humidity_buffer[20];
 
@@ -209,8 +209,7 @@ static void lv_display_weather_create(lv_obj_t * parent)
 
     lv_obj_align(label_weather_status, LV_ALIGN_TOP_MID, 0, 60);
 
-
-    snprintf(weather_temp_buffer, 20, "Temp: %0.00f°C", weather_temp);
+    snprintf(weather_temp_buffer, 60, "Temp      : %0.00f°C\nPressure : %d mBar\nHumidity: %d%%", weather_temp, weather_pressure, weather_humidity);
 
     static lv_style_t style_weather_temp;
     lv_style_init(&style_weather_temp);
@@ -223,39 +222,54 @@ static void lv_display_weather_create(lv_obj_t * parent)
     lv_obj_add_style(label_weather_temp, &style_weather_temp, 0);
     lv_label_set_text(label_weather_temp, weather_temp_buffer);  // set text
 
-    lv_obj_align(label_weather_temp, LV_ALIGN_CENTER, 0, -20);
+    lv_obj_align(label_weather_temp, LV_ALIGN_CENTER, 0, 40);
 
+    // snprintf(weather_temp_buffer, 20, "Temp: %0.00f°C", weather_temp);
 
-    snprintf(weather_pressure_buffer, 20, "Press: %d mBar", weather_pressure);
-
-    static lv_style_t style_weather_pressure;
-    lv_style_init(&style_weather_pressure);
-	lv_obj_t * label_weather_pressure = lv_label_create(parent);
+    // static lv_style_t style_weather_temp;
+    // lv_style_init(&style_weather_temp);
+	// lv_obj_t * label_weather_temp = lv_label_create(parent);
     
-    lv_style_set_text_font(&style_weather_pressure, &lv_font_montserrat_16); 
-    lv_style_set_text_color(&style_weather_pressure, lv_color_white());
-    lv_style_set_text_letter_space(&style_weather_pressure, 2);
+    // lv_style_set_text_font(&style_weather_temp, &lv_font_montserrat_16); 
+    // lv_style_set_text_color(&style_weather_temp, lv_color_white());
+    // lv_style_set_text_letter_space(&style_weather_temp, 2);
 
-    lv_obj_add_style(label_weather_pressure, &style_weather_pressure, 0);
-    lv_label_set_text(label_weather_pressure, weather_pressure_buffer);  // set text
+    // lv_obj_add_style(label_weather_temp, &style_weather_temp, 0);
+    // lv_label_set_text(label_weather_temp, weather_temp_buffer);  // set text
 
-    lv_obj_align(label_weather_pressure, LV_ALIGN_CENTER, 0, 20);
+    // lv_obj_align(label_weather_temp, LV_ALIGN_CENTER, 0, -20);
 
 
-    snprintf(weather_humidity_buffer, 20, "Humidity: %d%%", weather_humidity);
+    // snprintf(weather_pressure_buffer, 20, "Press: %d mBar", weather_pressure);
 
-    static lv_style_t style_weather_humidity;
-    lv_style_init(&style_weather_humidity);
-	lv_obj_t * label_weather_humidity = lv_label_create(parent);
+    // static lv_style_t style_weather_pressure;
+    // lv_style_init(&style_weather_pressure);
+	// lv_obj_t * label_weather_pressure = lv_label_create(parent);
     
-    lv_style_set_text_font(&style_weather_humidity, &lv_font_montserrat_16); 
-    lv_style_set_text_color(&style_weather_humidity, lv_color_white());
-    lv_style_set_text_letter_space(&style_weather_humidity, 2);
+    // lv_style_set_text_font(&style_weather_pressure, &lv_font_montserrat_16); 
+    // lv_style_set_text_color(&style_weather_pressure, lv_color_white());
+    // lv_style_set_text_letter_space(&style_weather_pressure, 2);
 
-    lv_obj_add_style(label_weather_humidity, &style_weather_humidity, 0);
-    lv_label_set_text(label_weather_humidity, weather_humidity_buffer);  // set text
+    // lv_obj_add_style(label_weather_pressure, &style_weather_pressure, 0);
+    // lv_label_set_text(label_weather_pressure, weather_pressure_buffer);  // set text
 
-    lv_obj_align(label_weather_humidity, LV_ALIGN_CENTER, 0, 60);   
+    // lv_obj_align(label_weather_pressure, LV_ALIGN_CENTER, 0, 20);
+
+
+    // snprintf(weather_humidity_buffer, 20, "Humidity: %d%%", weather_humidity);
+
+    // static lv_style_t style_weather_humidity;
+    // lv_style_init(&style_weather_humidity);
+	// lv_obj_t * label_weather_humidity = lv_label_create(parent);
+    
+    // lv_style_set_text_font(&style_weather_humidity, &lv_font_montserrat_16); 
+    // lv_style_set_text_color(&style_weather_humidity, lv_color_white());
+    // lv_style_set_text_letter_space(&style_weather_humidity, 2);
+
+    // lv_obj_add_style(label_weather_humidity, &style_weather_humidity, 0);
+    // lv_label_set_text(label_weather_humidity, weather_humidity_buffer);  // set text
+
+    // lv_obj_align(label_weather_humidity, LV_ALIGN_CENTER, 0, 60);   
 }
 
 

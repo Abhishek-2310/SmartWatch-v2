@@ -142,7 +142,7 @@ void openweather_api_http(void *pvParameters)
         }
         esp_http_client_cleanup(client);
     
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(30000));
     }
 
     vTaskDelete(NULL);
