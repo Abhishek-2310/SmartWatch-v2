@@ -5,6 +5,8 @@
  */
 
 #include <stdio.h>
+#include <time.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_timer.h"
@@ -19,13 +21,8 @@
 
 #include "protocol_examples_common.h"
 #include "nvs_flash.h"
+#include "driver/gpio.h"
 #include "esp_event.h"
-
-/**********************
- *   ESP LOG TAGS
- **********************/
-static const char * guiTag = "guiTask";
-static const char * mainTag = "app_main";
 
 /**********************
  *      MACROS
@@ -57,6 +54,61 @@ static const char * mainTag = "app_main";
 
 #define EXAMPLE_LVGL_TICK_PERIOD_MS    1
 
+// Pushbuttons
+#define SET_PIN 19
+#define MODE_PIN  26
+#define RESET_PIN 18
+#define DEBOUNCE_DELAY 30   // in ms
+
+/**********************
+ *   ESP LOG TAGS
+ **********************/
+static const char * guiTag = "guiTask";
+static const char * mainTag = "app_main";
+static const char * TAG = "Button";
+
+/**********************
+ *      STRUCTS
+ **********************/
+typedef struct
+{
+    uint8_t hours;
+    uint8_t minutes;
+}Alarm_t;
+
+/**********************
+ *      ENUMS
+ **********************/
+typedef enum
+{
+    TIME_MODE,
+    WEATHER_MODE,
+    ALARM_MODE,
+    STOPWATCH_MODE
+}Mode_t;
+
+/**********************
+ *  GLOBAL VARIABLES
+ **********************/
+Alarm_t alarm1;
+uint8_t count = 0;
+// uint8_t mode_count = 0;
+Mode_t Mode = TIME_MODE;
+const Mode_t Mode_Table[4] = {TIME_MODE,
+                            WEATHER_MODE,
+                            ALARM_MODE,
+                            STOPWATCH_MODE};
+uint8_t mode_index = 0;
+
+BaseType_t set_hour = pdTRUE;
+
+/**********************
+ *      HANDLES
+ **********************/
+TaskHandle_t AlarmTask_Handle;
+TaskHandle_t ModeTask_Handle;
+TaskHandle_t StateTask_Handle;
+TaskHandle_t Set_Rst_task_handle;
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -65,6 +117,113 @@ static void guiTask(void *pvParameter);
 extern void get_ntp_time(void);
 extern void get_weather_update(void);
 extern void lv_task_modes(void);
+
+/**********************
+ * INTERRUPT CALLBACKS
+ **********************/
+static void IRAM_ATTR set_rst_interrupt_handler(void *args)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the Set_Rst_task that the button was pressed
+    vTaskNotifyGiveFromISR(Set_Rst_task_handle, &xHigherPriorityTaskWoken);
+
+    // Clear the interrupt flag and exit
+    gpio_intr_disable(SET_PIN);
+    gpio_intr_enable(SET_PIN);
+    gpio_intr_disable(RESET_PIN);
+    gpio_intr_enable(RESET_PIN);
+}
+
+
+static void IRAM_ATTR mode_interrupt_handler(void *args)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the Set_Rst_task that the button was pressed
+    vTaskNotifyGiveFromISR(ModeTask_Handle, &xHigherPriorityTaskWoken);
+
+    // Clear the interrupt flag and exit
+    gpio_intr_disable(MODE_PIN);
+    gpio_intr_enable(MODE_PIN);
+}
+/**********************
+ *   TASK FUNCTIONS
+ **********************/
+void Mode_Task(void* pvParameters)
+{
+    while(1)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
+
+        int mode_button_state = gpio_get_level(MODE_PIN);
+        if(mode_button_state == 0)
+        {
+            mode_index = (mode_index + 1) % 4;
+            Mode = Mode_Table[mode_index];
+            ESP_LOGI(TAG, "mode: %d", mode_index);
+        }
+    }
+}
+
+void Alarm_Task(void * pvParameters)
+{
+    time_t now;
+    struct tm timeinfo;
+
+    while(1)
+    {
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        // ESP_LOGI(TAG, "The current date/time renewed");
+
+        if(timeinfo.tm_hour == alarm1.hours && timeinfo.tm_min == alarm1.minutes)
+            ESP_LOGI(TAG, "Alarm time match!!!");
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+    }
+    vTaskDelete(NULL);
+}
+
+
+void Set_Rst_Task(void *params)
+{
+
+    while (1) 
+    {
+
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        // Wait for a short debounce delay
+        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
+
+        int set_button_state = gpio_get_level(SET_PIN);
+        int reset_button_state = gpio_get_level(RESET_PIN);
+        if (set_button_state == 0) 
+        {
+            if(set_hour)
+            {
+                alarm1.hours = (alarm1.hours + 1) % 24;
+                ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
+                ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
+            }
+            else
+            {
+                alarm1.minutes = (alarm1.minutes + 1) % 60;
+                ESP_LOGI(TAG, "hours: %d", alarm1.hours);
+                ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
+            }
+        }
+        if (reset_button_state == 0) 
+        {
+            set_hour = !set_hour;
+            ESP_LOGI(TAG, "Set hour: %d", set_hour);
+        }
+    }
+}
 
 /**********************
  *  STATIC FUNCTIONS
@@ -128,6 +287,7 @@ static void example_increase_lvgl_tick(void *arg)
 
 void app_main(void)
 {
+
     ESP_LOGI(mainTag, "Connect to WiFi");
     // Connect to WiFi     
     ESP_ERROR_CHECK( nvs_flash_init() );
@@ -140,11 +300,52 @@ void app_main(void)
      */
     ESP_ERROR_CHECK(example_connect());
 
+    ESP_LOGI(mainTag, "PushButton Config");
+
+    gpio_config_t io_conf_set, io_conf_rst, io_conf_mode;
+    // Configure the GPIO pin for the button as an input
+    io_conf_set.intr_type = GPIO_INTR_NEGEDGE;
+    io_conf_set.mode = GPIO_MODE_INPUT;
+    io_conf_set.pin_bit_mask = (1ULL << SET_PIN);
+    io_conf_set.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_conf_set.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&io_conf_set);
+
+    // Configure the GPIO pin for the button as an input
+    io_conf_rst.intr_type = GPIO_INTR_NEGEDGE;
+    io_conf_rst.mode = GPIO_MODE_INPUT;
+    io_conf_rst.pin_bit_mask = (1ULL << RESET_PIN);
+    io_conf_rst.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_conf_rst.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&io_conf_rst);
+
+     // Configure the GPIO pin for the button as an input
+    io_conf_mode.intr_type = GPIO_INTR_NEGEDGE;
+    io_conf_mode.mode = GPIO_MODE_INPUT;
+    io_conf_mode.pin_bit_mask = (1ULL << MODE_PIN);
+    io_conf_mode.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_conf_mode.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&io_conf_mode);
+
+    gpio_install_isr_service(0);
+
+    gpio_isr_handler_add(SET_PIN, set_rst_interrupt_handler, (void *)SET_PIN);
+    gpio_isr_handler_add(RESET_PIN, set_rst_interrupt_handler, (void *)RESET_PIN);
+    gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
+
+    get_ntp_time();
+    get_weather_update();
+    
+    xTaskCreate(Set_Rst_Task, "Set_Rst_Task", 2048, NULL, 1, &Set_Rst_task_handle);
+    xTaskCreate(Alarm_Task, "Alarm_Task", 2048, NULL, 1, &AlarmTask_Handle);
+    xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
+
+
     ESP_LOGI(mainTag, "Create guiTask");
     //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
     //  * Otherwise there can be problem such as memory corruption and so on.
     //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
-    xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);   
+    xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);
 }
 
 
@@ -252,8 +453,6 @@ static void guiTask(void *pvParameter)
     ESP_LOGI(guiTag, "Demo starts");
     // example_lvgl_demo_ui(disp);
     // display_time();
-    get_ntp_time();
-    get_weather_update();
     lv_task_modes();
 
     while (1) 

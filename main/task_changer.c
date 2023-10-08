@@ -20,14 +20,20 @@
 /**********************
  *      TYPEDEFS
  **********************/
-
+typedef enum
+{
+    TIME_MODE,
+    WEATHER_MODE,
+    ALARM_MODE,
+    STOPWATCH_MODE
+}Mode_t;
 /**********************
  *  STATIC PROTOTYPES
  **********************/
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_create(lv_obj_t * parent);
 
-static void tab_changer_task_cb(lv_timer_t * task);
+static void State_task(lv_timer_t * task);
 
 /**********************
  *  STATIC VARIABLES
@@ -49,6 +55,7 @@ extern double weather_temp;
 extern int weather_pressure;
 extern int weather_humidity;
 
+extern Mode_t Mode;
 /**********************
  *        TAGS
  **********************/
@@ -94,7 +101,7 @@ void lv_task_modes(void)
     lv_display_time_create(t1);
     lv_display_weather_create(t2);
 
-    lv_timer_create(tab_changer_task_cb, 5000, NULL);
+    lv_timer_create(State_task, 5000, NULL);
 }
 
 /**********************
@@ -273,24 +280,54 @@ static void lv_display_weather_create(lv_obj_t * parent)
 }
 
 
-static void tab_changer_task_cb(lv_timer_t * task)
+// static void tab_changer_task_cb(lv_timer_t * task)
+// {
+//     ESP_LOGI(TAG, "Switching tasks");
+
+//     uint16_t act = lv_tabview_get_tab_act(tv);
+//     act++;
+//     if(act >= 2) act = 0;
+
+//     lv_tabview_set_act(tv, act, LV_ANIM_ON);
+
+//     switch(act) {
+//     case 0:
+//         lv_display_time_create(t1);
+//         // tab_content_anim_create(t1);
+//         break;
+//     case 1:
+//         lv_display_weather_create(t2);
+//         // tab_content_anim_create(t2);
+//         break;
+//     }
+// }
+
+static void State_task(lv_timer_t * task)
 {
-    ESP_LOGI(TAG, "Switching tasks");
 
-    uint16_t tab_id = lv_tabview_get_tab_act(tv);
-    tab_id++;
-    if(tab_id >= 2) tab_id = 0;
+    switch(Mode)
+    {
+        case TIME_MODE:
+            ESP_LOGI(TAG, "Time State");
+            lv_tabview_set_act(tv, 0, LV_ANIM_ON);
+            lv_display_time_create(t1);
+            break;
 
-    lv_tabview_set_act(tv, tab_id, LV_ANIM_ON);
+        case WEATHER_MODE:
+            ESP_LOGI(TAG, "Weather State");
+            lv_tabview_set_act(tv, 1, LV_ANIM_ON);
+            lv_display_weather_create(t2);
+            break;
 
-    switch(tab_id) {
-    case 0:
-        lv_display_time_create(t1);
-        // tab_content_anim_create(t1);
-        break;
-    case 1:
-        lv_display_weather_create(t2);
-        // tab_content_anim_create(t2);
-        break;
+        case ALARM_MODE:
+            ESP_LOGI(TAG, "Alarm State");
+
+            break;
+
+        case STOPWATCH_MODE:
+            ESP_LOGI(TAG, "StopWatch State");
+
+            break;
     }
 }
+
