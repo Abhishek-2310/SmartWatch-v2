@@ -1,5 +1,71 @@
 # Changelog
 
+## [v8.3.10](https://github.com/lvgl/lvgl/compare/v8.3.10...v8.3.9) 20 September 2023
+
+### New Features
+
+- feat(disp): add double buffered direct-mode efficient sync algorithm (v8.3) [`4497`](https://github.com/lvgl/lvgl/pull/4497)
+- feat(style): backport opa_layered [`6548ea0`](https://github.com/lvgl/lvgl/commit/6548ea0f291be8a97afb3c4d7dcabbe465ae5a04)
+
+
+### Fixes
+
+- fix: build on Windows (MinGW environment) [`4538`](https://github.com/lvgl/lvgl/pull/4538)
+- fix(docs): dropdown: fix function name in description of static options [`4535`](https://github.com/lvgl/lvgl/pull/4535)
+- fix: do not copy invalid areas if not double buffered mode [`4526`](https://github.com/lvgl/lvgl/pull/4526)
+- fix(sdl): add missing parameter in lv_draw_sdl_composite_texture_obtain [`4490`](https://github.com/lvgl/lvgl/pull/4490)
+- fix(dropdown): position to the selected item in lv_dropdown_set_selected [`f174589`](https://github.com/lvgl/lvgl/commit/f174589240b099a349e54ba09aa9b39c2b347341)
+- fix(vglite): be sure end_angle > start_angle in arc drawing [`01cd1fe`](https://github.com/lvgl/lvgl/commit/01cd1fed9db974aa616a6289a29171b7a971cd89)
+- fix(btnmatrix): fix tapping just outside a button in a buttonmatrix [`8063fac`](https://github.com/lvgl/lvgl/commit/8063fac793b0a09add1e57c1115b734659274e6f)
+
+
+### Docs
+
+- docs(calendar): update according to v8.2 changes [`a296456`](https://github.com/lvgl/lvgl/commit/a296456591f6ff0e3b3ae6cdcdd9ec5b1711c357)
+- docs(simulator): remove SDL support from the Visual Studio project [`bcebafe`](https://github.com/lvgl/lvgl/commit/bcebafe4fb72e336b7dedca89c07e334427eef8d)
+
+### CI and tests
+
+- ci: update screenshot compare from v9 to automatically create missing reference images [`fd21ed0`](https://github.com/lvgl/lvgl/commit/fd21ed0eb82bacb1e482180ab0aaed6a667f000d)
+- ci(dropdown): fix test [`5fc488a`](https://github.com/lvgl/lvgl/commit/5fc488a088639dbfb5eb44f65b05e13b6ba881bf)
+
+### Others
+
+- chore(cmsis-pack): create cmsis-pack for v8.3.10 [`4572`](https://github.com/lvgl/lvgl/pull/4572)
+- Update screen object opacity function documentation [`4505`](https://github.com/lvgl/lvgl/pull/4505)
+- demo(sress): fix issues when the stress test is opened/clsoed multiple times [`1c5df6c`](https://github.com/lvgl/lvgl/commit/1c5df6c665b0d5f6f346d45b13109ff1f6ea78a6)
+- chore: code formatting [`eb87767`](https://github.com/lvgl/lvgl/commit/eb87767cc65fec93f9cc4f87a1f8fb5b32f7e41d)
+
+
+## [v8.3.9](https://github.com/lvgl/lvgl/compare/v8.3.9...v8.3.8) 6 August 2023
+
+
+### Fixes
+
+- fix(decoder): fix LV_IMG_CF_ALPHA_8BIT bin file decoder [`4406`](https://github.com/lvgl/lvgl/pull/4406)
+- fix(config): fix typo in LV_USE_PERF_MONITOR and LV_USE_MEM_MONITOR [`4403`](https://github.com/lvgl/lvgl/pull/4403)
+- fix(attr): refactor LV_ATTRIBUTE_* for function attributes [`4404`](https://github.com/lvgl/lvgl/pull/4404)
+- fix(font): fix optimizer issue in  lv_font_fmt_txt.c [`4385`](https://github.com/lvgl/lvgl/pull/4385)
+- fix(btnmatrix): Hide button matrix when all buttons hidden [`65f1c93`](https://github.com/lvgl/lvgl/commit/65f1c9305e1b13356010524da4764fe20fe93030)
+- fix(obj) prevent hidden objects keeping focus [`375b3b5`](https://github.com/lvgl/lvgl/commit/375b3b5d3ef2ea8c52f971a1bf20998be7940d5e)
+- fix(btnmatrix): Fix typo in previous commit! [`29ed7c5`](https://github.com/lvgl/lvgl/commit/29ed7c5717f6cfbca5ce888bf4497221525aae85)
+- fix(tabview): fix warning [`223dc1c`](https://github.com/lvgl/lvgl/commit/223dc1cf9d1cad0f40caf244eb435af0871f4153)
+- fix(indev): fix warnings when loggin coordinates is enabled [`645006e`](https://github.com/lvgl/lvgl/commit/645006e35195cab3354f34a1a8cbc8c5ed0fdfad)
+- fix: use const lv_img_dsc_t * dsc function parameter in lv_img_buf.h/ [`4f102d7`](https://github.com/lvgl/lvgl/commit/4f102d7b6b2e9f9fa68ab7b976d93762107549a4)
+- fix(chart): fix lv_chart_get_point_pos_by_id [`f9ffcc9`](https://github.com/lvgl/lvgl/commit/f9ffcc9d8e11beb369dcbab0945ca85eab8f77b2)
+- fix(imgbtn): support LV_OBJ_FLAG_CHECKABLE [`385d999`](https://github.com/lvgl/lvgl/commit/385d999a4a8164fcde6ae05f6a5daa5d5c209dd3)
+
+
+### Docs
+
+- docs(disp): metined that rotation rotates the touch coordinates too [`810852b`](https://github.com/lvgl/lvgl/commit/810852b41be5df66fd7b80f8af69f8b579d142ea)
+
+
+### Others
+
+- demos: add lv_demo_..._close() functions for each demo [`91038a9`](https://github.com/lvgl/lvgl/commit/91038a99e82a2522f693c7cdc77e9e7a672ee9ed)
+
+
 ## [v8.3.8](https://github.com/lvgl/lvgl/compare/v8.3.8...v8.3.7) 5 July 2023
 
 ### New Features
