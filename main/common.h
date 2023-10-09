@@ -2,9 +2,17 @@
 #define COMMON_H
 
 /*********************
+ *      DEFINES
+ *********************/
+#define SET_PIN 19
+#define MODE_PIN  26
+#define RESET_PIN 18
+#define DEBOUNCE_DELAY 30   // in ms
+/*********************
  *      INCLUDES
  *********************/
 #include <stdio.h>
+#include <time.h>
 
 /**********************
  *      STRUCTS
