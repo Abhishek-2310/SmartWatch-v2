@@ -12,28 +12,20 @@
 #include "esp_log.h"
 
 #include "lvgl.h"
+#include "esp_event.h"
+#include "common.h"
 
 /*********************
  *      DEFINES
  *********************/
 
 /**********************
- *      TYPEDEFS
- **********************/
-typedef enum
-{
-    TIME_MODE,
-    WEATHER_MODE,
-    ALARM_MODE,
-    STOPWATCH_MODE
-}Mode_t;
-/**********************
  *  STATIC PROTOTYPES
  **********************/
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_create(lv_obj_t * parent);
 
-static void State_task(lv_timer_t * task);
+static void State_task(void * pvParameters);
 
 /**********************
  *  STATIC VARIABLES
@@ -56,6 +48,9 @@ extern int weather_pressure;
 extern int weather_humidity;
 
 extern Mode_t Mode;
+
+TaskHandle_t StateTask_Handle;
+extern SemaphoreHandle_t xGuiSemaphore;
 /**********************
  *        TAGS
  **********************/
@@ -101,7 +96,8 @@ void lv_task_modes(void)
     lv_display_time_create(t1);
     lv_display_weather_create(t2);
 
-    lv_timer_create(State_task, 5000, NULL);
+    // lv_timer_create(State_task, 5000, NULL);
+    xTaskCreatePinnedToCore(State_task, "State", 2048*2, NULL, 0, &StateTask_Handle, 1);
 }
 
 /**********************
@@ -302,32 +298,44 @@ static void lv_display_weather_create(lv_obj_t * parent)
 //     }
 // }
 
-static void State_task(lv_timer_t * task)
+static void State_task(void * pvParameters)
 {
 
-    switch(Mode)
+    while(1)
     {
-        case TIME_MODE:
-            ESP_LOGI(TAG, "Time State");
-            lv_tabview_set_act(tv, 0, LV_ANIM_ON);
-            lv_display_time_create(t1);
-            break;
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
 
-        case WEATHER_MODE:
-            ESP_LOGI(TAG, "Weather State");
-            lv_tabview_set_act(tv, 1, LV_ANIM_ON);
-            lv_display_weather_create(t2);
-            break;
+        if(pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY))
+        {
+            switch(Mode)
+            {
+                case TIME_MODE:
+                    ESP_LOGI(TAG, "Time State");
+                    lv_tabview_set_act(tv, 0, LV_ANIM_ON);
+                    lv_display_time_create(t1);
+                    break;
 
-        case ALARM_MODE:
-            ESP_LOGI(TAG, "Alarm State");
+                case WEATHER_MODE:
+                    ESP_LOGI(TAG, "Weather State");
+                    lv_tabview_set_act(tv, 1, LV_ANIM_ON);
+                    lv_display_weather_create(t2);
+                    break;
 
-            break;
+                case ALARM_MODE:
+                    ESP_LOGI(TAG, "Alarm State");
 
-        case STOPWATCH_MODE:
-            ESP_LOGI(TAG, "StopWatch State");
+                    break;
 
-            break;
+                case STOPWATCH_MODE:
+                    ESP_LOGI(TAG, "StopWatch State");
+
+                    break;
+            }
+
+            xSemaphoreGive(xGuiSemaphore);
+        }
+
+        // vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 

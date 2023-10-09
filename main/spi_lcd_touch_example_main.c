@@ -21,8 +21,8 @@
 
 #include "protocol_examples_common.h"
 #include "nvs_flash.h"
-#include "driver/gpio.h"
 #include "esp_event.h"
+#include "common.h"
 
 /**********************
  *      MACROS
@@ -67,25 +67,7 @@ static const char * guiTag = "guiTask";
 static const char * mainTag = "app_main";
 static const char * TAG = "Button";
 
-/**********************
- *      STRUCTS
- **********************/
-typedef struct
-{
-    uint8_t hours;
-    uint8_t minutes;
-}Alarm_t;
 
-/**********************
- *      ENUMS
- **********************/
-typedef enum
-{
-    TIME_MODE,
-    WEATHER_MODE,
-    ALARM_MODE,
-    STOPWATCH_MODE
-}Mode_t;
 
 /**********************
  *  GLOBAL VARIABLES
@@ -107,8 +89,8 @@ BaseType_t set_hour = pdTRUE;
  **********************/
 TaskHandle_t AlarmTask_Handle;
 TaskHandle_t ModeTask_Handle;
-TaskHandle_t StateTask_Handle;
 TaskHandle_t Set_Rst_task_handle;
+extern TaskHandle_t StateTask_Handle;
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -164,6 +146,7 @@ void Mode_Task(void* pvParameters)
             mode_index = (mode_index + 1) % 4;
             Mode = Mode_Table[mode_index];
             ESP_LOGI(TAG, "mode: %d", mode_index);
+            xTaskNotifyGive(StateTask_Handle);
         }
     }
 }
@@ -194,7 +177,7 @@ void Set_Rst_Task(void *params)
 
     while (1) 
     {
-
+        // Block on entry until notification from mode recieved
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         // Wait for a short debounce delay
