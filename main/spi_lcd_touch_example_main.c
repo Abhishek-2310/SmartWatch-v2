@@ -5,8 +5,7 @@
  */
 
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+
 #include "esp_timer.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
@@ -14,7 +13,6 @@
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "esp_err.h"
-#include "esp_log.h"
 #include "lvgl.h"
 
 #include "protocol_examples_common.h"
@@ -203,7 +201,7 @@ void app_main(void)
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
 
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
-    
+
     ESP_LOGI(mainTag, "Create guiTask");
     //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
     //  * Otherwise there can be problem such as memory corruption and so on.

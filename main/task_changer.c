@@ -5,10 +5,6 @@
 #include <sys/time.h>
 #include <ctype.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-
 #include "lvgl.h"
 #include "esp_event.h"
 #include "common.h"
@@ -190,9 +186,7 @@ static void lv_display_weather_create(lv_obj_t * parent)
 
     lv_obj_clean(parent);
 
-    char weather_temp_buffer[60];
-    char weather_pressure_buffer[20];
-    char weather_humidity_buffer[20];
+    char weather_display_buffer[60];
 
     static lv_style_t style_weather_status;
     lv_style_init(&style_weather_status);
@@ -207,7 +201,7 @@ static void lv_display_weather_create(lv_obj_t * parent)
 
     lv_obj_align(label_weather_status, LV_ALIGN_TOP_MID, 0, 60);
 
-    snprintf(weather_temp_buffer, 60, "Temp      : %0.00f°C\nPressure : %d mBar\nHumidity: %d%%", weather_temp, weather_pressure, weather_humidity);
+    snprintf(weather_display_buffer, 60, "Temp      : %0.00f°C\nPressure : %d mBar\nHumidity: %d%%", weather_temp, weather_pressure, weather_humidity);
 
     static lv_style_t style_weather_temp;
     lv_style_init(&style_weather_temp);
@@ -218,7 +212,7 @@ static void lv_display_weather_create(lv_obj_t * parent)
     lv_style_set_text_letter_space(&style_weather_temp, 2);
 
     lv_obj_add_style(label_weather_temp, &style_weather_temp, 0);
-    lv_label_set_text(label_weather_temp, weather_temp_buffer);  // set text
+    lv_label_set_text(label_weather_temp, weather_display_buffer);  // set text
 
     lv_obj_align(label_weather_temp, LV_ALIGN_CENTER, 0, 40);
 
