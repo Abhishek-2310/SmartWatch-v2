@@ -7,6 +7,7 @@
 
 #include "lvgl.h"
 #include "esp_event.h"
+#include "driver/gpio.h"
 #include "common.h"
 
 /*********************
@@ -18,7 +19,7 @@
  **********************/
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_create(lv_obj_t * parent);
-
+static void lv_display_alarm_create(lv_timer_t * timer);
 static void State_task(void * pvParameters);
 
 /**********************
@@ -29,6 +30,7 @@ static lv_obj_t * t1;
 static lv_obj_t * t2;
 static lv_obj_t * t3;
 
+lv_timer_t * alarm_timer;
 /**********************
  * EXTERNAL VARIABLES
  **********************/
@@ -39,6 +41,8 @@ extern int weather_pressure;
 extern int weather_humidity;
 
 extern Mode_t Mode;
+
+extern Alarm_t alarm1;
 
 TaskHandle_t StateTask_Handle;
 extern SemaphoreHandle_t xGuiSemaphore;
@@ -77,6 +81,7 @@ void lv_task_modes(void)
 
     t1 = lv_tabview_add_tab(tv, "Time");
     t2 = lv_tabview_add_tab(tv, "Weather");
+    t3 = lv_tabview_add_tab(tv, "Alarm");
 
     // Background Style to turn it black
     static lv_style_t style_screen;
@@ -85,7 +90,9 @@ void lv_task_modes(void)
     lv_obj_add_style(tv, &style_screen, 0); 
 
     lv_display_time_create(t1);
-    lv_display_weather_create(t2);
+    alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t3);
+    lv_timer_pause(alarm_timer);
+    // lv_display_weather_create(t2);
 
     // lv_timer_create(State_task, 5000, NULL);
     xTaskCreatePinnedToCore(State_task, "State", 2048*2, NULL, 0, &StateTask_Handle, 1);
@@ -173,7 +180,7 @@ static void lv_display_time_create(lv_obj_t * parent)
     lv_obj_add_style(label_date, &style_date, 0);
     lv_label_set_text(label_date, date_str);  // set text
 
-    lv_obj_align(label_date, LV_ALIGN_CENTER, -10, 80);
+    lv_obj_align(label_date, LV_ALIGN_CENTER, 0, 80);
 // #if LV_DEMO_WIDGETS_SLIDESHOW
 //     tab_content_anim_create(parent);
 // #endif
@@ -218,7 +225,43 @@ static void lv_display_weather_create(lv_obj_t * parent)
 
 }
 
+static void lv_display_alarm_create(lv_timer_t * timer)
+{
+    ESP_LOGI(TAG, "lv_display alarm");
 
+    lv_obj_clean(timer->user_data);
+
+    static lv_style_t style_alarm_title;
+    lv_style_init(&style_alarm_title);
+	lv_obj_t * label_alarm_title = lv_label_create(timer->user_data);
+    
+    lv_style_set_text_font(&style_alarm_title, &lv_font_montserrat_24); 
+    lv_style_set_text_color(&style_alarm_title, lv_color_white());
+    lv_style_set_text_letter_space(&style_alarm_title, 2);
+
+    lv_obj_add_style(label_alarm_title, &style_alarm_title, 0);
+    lv_label_set_text(label_alarm_title, "Set alarm");  // set text
+
+    lv_obj_align(label_alarm_title, LV_ALIGN_TOP_MID, 0, 60);
+
+    char alarm_buffer[10];
+
+    snprintf(alarm_buffer, 10, "%02d:%02d", alarm1.hours, alarm1.minutes);
+
+    static lv_style_t style_alarm;
+    lv_style_init(&style_alarm);
+	lv_obj_t * label_alarm = lv_label_create(timer->user_data);
+    
+    lv_style_set_text_font(&style_alarm, &lv_font_montserrat_48); 
+    lv_style_set_text_color(&style_alarm, lv_palette_main(LV_PALETTE_YELLOW));
+    lv_style_set_text_letter_space(&style_alarm, 2);
+
+    lv_obj_add_style(label_alarm, &style_alarm, 0);
+    lv_label_set_text(label_alarm, alarm_buffer);  // set text
+
+    lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
+    
+}
 // static void tab_changer_task_cb(lv_timer_t * task)
 // {
 //     ESP_LOGI(TAG, "Switching tasks");
@@ -265,11 +308,18 @@ static void State_task(void * pvParameters)
                     break;
 
                 case ALARM_MODE:
+                    gpio_intr_enable(SET_PIN);
+                    gpio_intr_enable(RESET_PIN);
                     ESP_LOGI(TAG, "Alarm State");
+                    lv_tabview_set_act(tv, 2, LV_ANIM_ON);
+                    lv_timer_resume(alarm_timer);
 
                     break;
 
                 case STOPWATCH_MODE:
+                    gpio_intr_disable(SET_PIN);
+                    gpio_intr_disable(RESET_PIN);
+                    lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
 
                     break;
