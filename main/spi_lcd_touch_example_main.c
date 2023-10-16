@@ -71,6 +71,7 @@ uint8_t mode_index = 0;
  *      HANDLES
  **********************/
 TaskHandle_t ModeTask_Handle;
+TaskHandle_t EspCommsTask_Handle;
 extern TaskHandle_t StateTask_Handle;
 /**********************
  *  STATIC PROTOTYPES
@@ -81,6 +82,7 @@ extern void get_ntp_time(void);
 extern void get_weather_update(void);
 extern void lv_task_modes(void);
 extern void alarm_config(void);
+extern void Esp_Comms_Task(void *pvParameter);
 
 /**********************
  * INTERRUPT CALLBACKS
@@ -95,6 +97,18 @@ static void IRAM_ATTR mode_interrupt_handler(void *args)
     // Clear the interrupt flag and exit
     gpio_intr_disable(MODE_PIN);
     gpio_intr_enable(MODE_PIN);
+}
+
+static void IRAM_ATTR comms_interrupt_handler(void *args)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the Set_Rst_task that the button was pressed
+    vTaskNotifyGiveFromISR(EspCommsTask_Handle, &xHigherPriorityTaskWoken);
+
+    // Clear the interrupt flag and exit
+    gpio_intr_disable(COMMS_PIN);
+    gpio_intr_enable(COMMS_PIN);
 }
 /**********************
  *   TASK FUNCTIONS
@@ -199,8 +213,10 @@ void app_main(void)
     alarm_config();
     
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
+    gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
 
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
+    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);
 
     ESP_LOGI(mainTag, "Create guiTask");
     //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task

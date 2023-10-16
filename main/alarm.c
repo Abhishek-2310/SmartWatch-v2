@@ -117,6 +117,14 @@ void alarm_config(void)
     io_conf_mode.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&io_conf_mode);
 
+     // Configure the GPIO pin for the button as an input
+    io_conf_mode.intr_type = GPIO_INTR_NEGEDGE;
+    io_conf_mode.mode = GPIO_MODE_INPUT;
+    io_conf_mode.pin_bit_mask = (1ULL << COMMS_PIN);
+    io_conf_mode.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_conf_mode.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&io_conf_mode);
+
     gpio_install_isr_service(0);
 
     gpio_isr_handler_add(SET_PIN, set_rst_interrupt_handler, (void *)SET_PIN);

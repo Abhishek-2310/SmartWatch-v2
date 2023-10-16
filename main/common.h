@@ -7,6 +7,7 @@
 #define SET_PIN 19
 #define MODE_PIN  26
 #define RESET_PIN 18
+#define COMMS_PIN 25
 #define DEBOUNCE_DELAY 30   // in ms
 /*********************
  *      INCLUDES
