@@ -1,100 +1,161 @@
+/* MQTT (over TCP) Example
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include "esp_wifi.h"
+#include "esp_system.h"
+#include "nvs_flash.h"
+#include "esp_event.h"
+#include "esp_netif.h"
+#include "protocol_examples_common.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_system.h"
-#include "esp_wifi.h"
-#include "esp_event.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "driver/gpio.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
 
-#include "lwip/err.h"
 #include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include "lwip/netdb.h"
 #include "lwip/dns.h"
+#include "lwip/netdb.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include "esp_log.h"
+#include "mqtt_client.h"
 
-#include "protocol_examples_common.h"
 #include "common.h"
 
-/** DEFINES **/
-#define WIFI_SUCCESS 1 << 0
-#define WIFI_FAILURE 1 << 1
-#define TCP_SUCCESS 1 << 0
-#define TCP_FAILURE 1 << 1
-#define MAX_FAILURES 10
-#define PORT 3000
-#define IP_ADDRESS "10.0.0.181"
+static const char *TAG = "mqtt_example";
 
-// task tag
-static const char *TAG = "WIFI-client";
 
-// connect to the server and return the result
-esp_err_t connect_tcp_server(void)
+static void log_error_if_nonzero(const char *message, int error_code)
 {
-	int client_socket;
-    struct sockaddr_in server_address;
-    // char *response = "Hello from ESP32!\n";
-
-    // Create socket
-    client_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_socket == -1) {
-        perror("Error creating socket");
-        exit(EXIT_FAILURE);
+    if (error_code != 0) {
+        ESP_LOGE(TAG, "Last error %s: 0x%x", message, error_code);
     }
-
-    // Set up server address
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = inet_addr(IP_ADDRESS);
-    server_address.sin_port = htons(PORT);
-
-    // Connect to the server
-    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1) {
-        perror("Connection failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Send a message
-    const char *message = "TURN_ON_LED";
-    if (send(client_socket, message, strlen(message), 0) == -1) {
-        perror("Message send failed");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Message sent: %s\n", message);
-
-    // Close the server socket
-    close(client_socket);
-
-    return TCP_SUCCESS;
 }
 
+/*
+ * @brief Event handler registered to receive MQTT events
+ *
+ *  This function is called by the MQTT client event loop.
+ *
+ * @param handler_args user data registered to the event.
+ * @param base Event base for the handler(always MQTT Base in this example).
+ * @param event_id The id for the received event.
+ * @param event_data The data for the event, esp_mqtt_event_handle_t.
+ */
+static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
+{
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRIi32 "", base, event_id);
+    esp_mqtt_event_handle_t event = event_data;
+    esp_mqtt_client_handle_t client = event->client;
+    int msg_id;
+    switch ((esp_mqtt_event_id_t)event_id) {
+    case MQTT_EVENT_CONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        msg_id = esp_mqtt_client_subscribe(client, "my_topic", 0);
+        ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
+
+        msg_id = esp_mqtt_client_publish(client, "my_topic", "Hi from ESP32...", 0, 1, 0);
+        ESP_LOGI(TAG, "publish successful, msg_id=%d", msg_id);
+        break;
+    case MQTT_EVENT_DISCONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+        break;
+
+    case MQTT_EVENT_SUBSCRIBED:
+        ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+    case MQTT_EVENT_UNSUBSCRIBED:
+        ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+    case MQTT_EVENT_PUBLISHED:
+        ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        break;
+    case MQTT_EVENT_DATA:
+        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+        printf("DATA=%.*s\r\n", event->data_len, event->data);
+        break;
+    case MQTT_EVENT_ERROR:
+        ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+        if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+            log_error_if_nonzero("reported from esp-tls", event->error_handle->esp_tls_last_esp_err);
+            log_error_if_nonzero("reported from tls stack", event->error_handle->esp_tls_stack_err);
+            log_error_if_nonzero("captured as transport's socket errno",  event->error_handle->esp_transport_sock_errno);
+            ESP_LOGI(TAG, "Last errno string (%s)", strerror(event->error_handle->esp_transport_sock_errno));
+
+        }
+        break;
+    default:
+        ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+        break;
+    }
+}
+
+static void mqtt_app_start(void)
+{
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .broker.address.uri = CONFIG_BROKER_URL,
+    };
+
+    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+    esp_mqtt_client_start(client);
+    
+    // To disconnect
+    // esp_mqtt_client_disconnect(client);
+
+}
 
 void Esp_Comms_Task(void *pvParameter)
 {
+    ESP_LOGI(TAG, "Entered ESP comms");
+
+// Block on entry until notification from mode recieved
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
+    // Wait for a short debounce delay
     vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
 
-    int comms_button_state = gpio_get_level(COMMS_PIN);
-    if(comms_button_state == 0)
+    int set_button_state = gpio_get_level(COMMS_PIN);
+    if (set_button_state == 0) 
     {
-        ESP_LOGI(TAG, "Comms turned ON");
+        ESP_LOGI(TAG, "[APP] Startup..");
+        ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
+        ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-        esp_err_t status = WIFI_FAILURE;
+        esp_log_level_set("*", ESP_LOG_INFO);
+        esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
+        esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
+        esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
+        esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
+        esp_log_level_set("transport", ESP_LOG_VERBOSE);
+        esp_log_level_set("outbox", ESP_LOG_VERBOSE);
 
-        status = connect_tcp_server();
-        if (TCP_SUCCESS != status)
-        {
-            ESP_LOGI(TAG, "Failed to connect to remote server, dying...");
-            return;
-        }
+        // ESP_ERROR_CHECK(nvs_flash_init());
+        // ESP_ERROR_CHECK(esp_netif_init());
+        // ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+        // /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
+        //  * Read "Establishing Wi-Fi or Ethernet Connection" section in
+        //  * examples/protocols/README.md for more information about this function.
+        //  */
+        // ESP_ERROR_CHECK(example_connect());
+
+        mqtt_app_start();
     }
+    
+    
+
+    vTaskDelete(NULL);
 }

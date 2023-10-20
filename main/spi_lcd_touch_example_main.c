@@ -39,7 +39,7 @@
 #define EXAMPLE_PIN_NUM_LCD_RST        4
 #define EXAMPLE_PIN_NUM_LCD_CS         15
 #define EXAMPLE_PIN_NUM_BK_LIGHT       21
-#define EXAMPLE_PIN_NUM_TOUCH_CS       18
+// #define EXAMPLE_PIN_NUM_TOUCH_CS       18
 
 // The pixel number in horizontal and vertical
 #define EXAMPLE_LCD_H_RES              240
