@@ -18,7 +18,7 @@ static const char *TAG = "display_weather";
 // API key from OpenWeatherMap 
 char open_weather_map_api_key[] = "87d57e01d9131a17b0f4b049bbb8be19";
 
-char city[] = "kitchener";
+char city[] = "cambridge";
 char country_code[] = "ca";
 
 #define HTTP_RESPONSE_BUFFER_SIZE 1024

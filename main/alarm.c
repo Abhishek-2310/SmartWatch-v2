@@ -1,18 +1,16 @@
 #include "driver/gpio.h"
 #include "common.h"
 
-#define SHORT_PRESS_DELAY   200   // Button press duration for short action in milliseconds
 #define LONG_PRESS_DELAY    3000   // Button press duration for long action in milliseconds
 
 /**********************
  *  GLOBAL VARIABLES
  **********************/
 extern Alarm_t alarm1;
-uint8_t count = 0;
 BaseType_t set_hour = pdTRUE;
-static const char *TAG = "alarm";
 extern uint8_t deep_sleep_reset;
 
+static const char *TAG = "alarm";
 
 TaskHandle_t AlarmTask_Handle;
 TaskHandle_t Set_task_handle;
@@ -77,34 +75,93 @@ void Alarm_Task(void * pvParameters)
 
 void Set_Task(void *params)
 {
+    // while (1) 
+    // {
+    //     // Block on entry until notification from mode recieved
+    //     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+    //     // Wait for a short debounce delay
+    //     vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
+
+    //     if (gpio_get_level(SET_PIN) == 0) 
+    //     {
+    //         if(set_hour)
+    //         {
+    //             alarm1.hours = (alarm1.hours + 1) % 24;
+    //             ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
+    //             ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
+    //         }
+    //         else
+    //         {
+    //             alarm1.minutes = (alarm1.minutes + 1) % 60;
+    //             ESP_LOGI(TAG, "hours: %d", alarm1.hours);
+    //             ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
+    //         }
+            
+    //     }
+
+    //     deep_sleep_reset = 1;
+
+    // }
+
+    uint32_t button_down_time = 0;
+    bool button_pressed = false;
+    bool block_task = true;
 
     while (1) 
     {
-        // Block on entry until notification from mode recieved
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        if(block_task)
+            ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        // Wait for a short debounce delay
         vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
 
-        if (gpio_get_level(SET_PIN) == 0) 
+        if (gpio_get_level(SET_PIN) == 0) // Button is pressed
         {
-            if(set_hour)
+            if (!button_pressed) // Button was just pressed
             {
-                alarm1.hours = (alarm1.hours + 1) % 24;
-                ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
-                ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
+                button_down_time = xTaskGetTickCount();
+                button_pressed = true;
+                block_task = false;
             }
-            else
+
+            // Check if the button is held for a long time
+            if ((xTaskGetTickCount() - button_down_time) >= (LONG_PRESS_DELAY / portTICK_PERIOD_MS))
             {
-                alarm1.minutes = (alarm1.minutes + 1) % 60;
-                ESP_LOGI(TAG, "hours: %d", alarm1.hours);
-                ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
+                ESP_LOGI(TAG, "Reset Long Press");
+                alarm1.enabled = 1;
+                xTaskNotifyGive(AlarmTask_Handle);
+                ESP_LOGI(TAG, "Enabled Alarm");
+                button_pressed = false; // Release the button
+                block_task = true;
             }
-            
+        }
+        else // Button is not pressed
+        {
+            // Check if the button was pressed for a short duration
+            if (button_pressed)
+            {
+                // Perform the short-press action here
+                ESP_LOGI(TAG, "Reset Short Press");
+                if(set_hour)
+                {
+                    alarm1.hours = (alarm1.hours + 1) % 24;
+                    ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
+                    ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
+                }
+                else
+                {
+                    alarm1.minutes = (alarm1.minutes + 1) % 60;
+                    ESP_LOGI(TAG, "hours: %d", alarm1.hours);
+                    ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
+                }
+                button_pressed = false; // Release the button
+            }
+
+            block_task = true;
         }
 
         deep_sleep_reset = 1;
-
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
@@ -133,8 +190,9 @@ void Reset_Task(void *params)
             // Check if the button is held for a long time
             if ((xTaskGetTickCount() - button_down_time) >= (LONG_PRESS_DELAY / portTICK_PERIOD_MS))
             {
-                // Perform the long-press action here
-                printf("Long Press Action\n");
+                ESP_LOGI(TAG, "Reset Long Press");
+                alarm1.enabled = false;
+                ESP_LOGI(TAG, "Disabled Alarm");
                 button_pressed = false; // Release the button
                 block_task = true;
             }
@@ -145,7 +203,9 @@ void Reset_Task(void *params)
             if (button_pressed)
             {
                 // Perform the short-press action here
-                printf("Short Press Action\n");
+                ESP_LOGI(TAG, "Reset Short Press");
+                set_hour = !set_hour;
+                ESP_LOGI(TAG, "set hour: %d", set_hour);
                 button_pressed = false; // Release the button
             }
 

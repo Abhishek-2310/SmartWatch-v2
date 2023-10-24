@@ -7,8 +7,9 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "common.h"
+#include "time.h"
 
-#define INACTIVITY_TIMEOUT_SECONDS 30  // Adjust as needed
+#define INACTIVITY_TIMEOUT_SECONDS 60  // Adjust as needed
 #define uS_TO_S_FACTOR 1000000
 // #define MODE_PIN 26
 
@@ -58,8 +59,8 @@ void enterDeepSleep() {
     // Configure the sleep timer and enter deep sleep
     ESP_LOGI(TAG, "Entering Deep sleep");
 
-    esp_err_t saveResult = saveStructToNVS("storage", "alarm", &alarm1);
-    if (saveResult == ESP_OK) {
+    esp_err_t saveAlarm = saveStructToNVS("storage", "alarm", &alarm1);
+    if (saveAlarm == ESP_OK) {
         printf("Struct saved to NVS\n");
     } else {
         printf("Failed to save struct to NVS\n");
@@ -68,6 +69,29 @@ void enterDeepSleep() {
     esp_deep_sleep_start();
 }
 
+void setRTCAlarm(void)
+{
+    int64_t wakeup_time;
+    int8_t neg_hour_adjust = 0; 
+    time_t now;
+    struct tm timeinfo;
+
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    if(alarm1.hours < timeinfo.tm_hour)
+    {
+        ESP_LOGI(TAG, "Hour adjusted");
+        neg_hour_adjust = 24;
+    }
+    // else
+    //     neg_hour_adjust = 0;
+
+    wakeup_time = (((alarm1.hours + neg_hour_adjust - (int8_t) timeinfo.tm_hour) * 3600 + (alarm1.minutes - (int8_t) timeinfo.tm_min ) * 60) - 30) * 1000000;
+
+    printf("wakeup time: %lld", wakeup_time);
+    esp_sleep_enable_timer_wakeup(wakeup_time);
+}
 
 void watchActivityMonitor(void* pvParameter)
 {
@@ -89,6 +113,10 @@ void watchActivityMonitor(void* pvParameter)
             // Check if the inactivity timeout has been reached
             if ((xTaskGetTickCount() - lastActivityTime) >= (INACTIVITY_TIMEOUT_SECONDS * configTICK_RATE_HZ)) {
                 // Smartwatch is inactive, enter deep sleep
+                if(alarm1.enabled)
+                {
+                    setRTCAlarm();
+                }
                 enterDeepSleep();
             }
         }
@@ -102,13 +130,13 @@ void deep_sleep_config(void)
     deep_sleep_reset = 0;
 
 // Retrieve the struct from NVS
-    // esp_err_t getResult = getStructFromNVS("storage", "alarm", &alarm1);
+    esp_err_t getResult = getStructFromNVS("storage", "alarm", &alarm1);
 
-    // if (getResult == ESP_OK) {
-    //     printf("Retrieved alarm from NVS: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
-    // } else {
-    //     printf("Failed to retrieve struct from NVS\n");
-    // }
+    if (getResult == ESP_OK) {
+        printf("Retrieved alarm from NVS: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
+    } else {
+        printf("Failed to retrieve struct from NVS\n");
+    }
     // Initialize your hardware and application
     
     esp_sleep_enable_ext0_wakeup(MODE_PIN, 0); 

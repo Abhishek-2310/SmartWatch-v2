@@ -133,14 +133,6 @@ void Mode_Task(void* pvParameters)
         int mode_button_state = gpio_get_level(MODE_PIN);
         if(mode_button_state == 0)
         {
-            if(Mode == ALARM_MODE && alarm1.enabled == 0)
-            {
-                ESP_LOGI(mainTag, "Unblock Alarm task");
-                alarm1.enabled = 1;
-                xTaskNotifyGive(AlarmTask_Handle);
-            }
-                
-
             mode_index = (mode_index + 1) % 4;
             Mode = Mode_Table[mode_index];
             ESP_LOGI(TAG, "mode: %d", mode_index);
@@ -212,21 +204,16 @@ static void example_increase_lvgl_tick(void *arg)
 
 void app_main(void)
 {
+    // init stuff
     ESP_ERROR_CHECK( nvs_flash_init() );
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK( esp_event_loop_create_default() );
 
+    // Boot Counter
     bootcount++;
     ESP_LOGI(mainTag, "Boot Count: %d", bootcount);
 
-    if(bootcount <= 1)
-    {
-        alarm1.hours = 12;
-        alarm1.minutes = 30;
-        alarm1.enabled = 0;
-    }
-    printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
-
+    // GUI Task
     ESP_LOGI(mainTag, "Create guiTask");
     //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
     //  * Otherwise there can be problem such as memory corruption and so on.
@@ -235,20 +222,27 @@ void app_main(void)
 
     // Connect to WiFi     
     ESP_LOGI(mainTag, "Connect to WiFi");
-    
-
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
     ESP_ERROR_CHECK(example_connect());
 
+    // NTP Task
     xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
-    // get_ntp_time();
 
     get_weather_update();
-    alarm_config();
     deep_sleep_config();
+    alarm_config();
+
+    // if reset then initialise alarm
+    if(bootcount <= 1)
+    {
+        alarm1.hours = 12;
+        alarm1.minutes = 30;
+        alarm1.enabled = 0;
+    }
+    printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
     
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
     gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
