@@ -67,9 +67,10 @@ const Mode_t Mode_Table[4] = {TIME_MODE,
                             ALARM_MODE,
                             STOPWATCH_MODE};
 uint8_t mode_index = 0;
-uint8_t buttonPressed;
+uint8_t deep_sleep_reset;
 RTC_DATA_ATTR int bootcount = 0;
 
+Alarm_t alarm1;
 /**********************
  *      HANDLES
  **********************/
@@ -77,6 +78,8 @@ TaskHandle_t ModeTask_Handle;
 TaskHandle_t NTP_Task_Handle;
 TaskHandle_t EspCommsTask_Handle;
 extern TaskHandle_t StateTask_Handle;
+extern TaskHandle_t AlarmTask_Handle;
+
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -130,11 +133,19 @@ void Mode_Task(void* pvParameters)
         int mode_button_state = gpio_get_level(MODE_PIN);
         if(mode_button_state == 0)
         {
+            if(Mode == ALARM_MODE && alarm1.enabled == 0)
+            {
+                ESP_LOGI(mainTag, "Unblock Alarm task");
+                alarm1.enabled = 1;
+                xTaskNotifyGive(AlarmTask_Handle);
+            }
+                
+
             mode_index = (mode_index + 1) % 4;
             Mode = Mode_Table[mode_index];
             ESP_LOGI(TAG, "mode: %d", mode_index);
             xTaskNotifyGive(StateTask_Handle);
-            buttonPressed = 1;
+            deep_sleep_reset = 1;
         }
     }
 }
@@ -201,8 +212,20 @@ static void example_increase_lvgl_tick(void *arg)
 
 void app_main(void)
 {
+    ESP_ERROR_CHECK( nvs_flash_init() );
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK( esp_event_loop_create_default() );
+
     bootcount++;
-    ESP_LOGI(TAG, "Boot Count: %d", bootcount);
+    ESP_LOGI(mainTag, "Boot Count: %d", bootcount);
+
+    if(bootcount <= 1)
+    {
+        alarm1.hours = 12;
+        alarm1.minutes = 30;
+        alarm1.enabled = 0;
+    }
+    printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
 
     ESP_LOGI(mainTag, "Create guiTask");
     //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
@@ -212,9 +235,7 @@ void app_main(void)
 
     // Connect to WiFi     
     ESP_LOGI(mainTag, "Connect to WiFi");
-    ESP_ERROR_CHECK( nvs_flash_init() );
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK( esp_event_loop_create_default() );
+    
 
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
@@ -233,9 +254,7 @@ void app_main(void)
     gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
 
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
-    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);
-
-    
+    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);    
 }
 
 

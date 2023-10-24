@@ -27,6 +27,7 @@ typedef struct
 {
     uint8_t hours;
     uint8_t minutes;
+    uint8_t enabled;
 }Alarm_t;
 
 /**********************

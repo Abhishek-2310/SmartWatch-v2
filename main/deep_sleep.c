@@ -12,30 +12,23 @@
 #define uS_TO_S_FACTOR 1000000
 // #define MODE_PIN 26
 
-// Define a sample struct
-typedef struct {
-    int value1;
-    float value2;
-    char str[20];
-} MyStruct;
+extern uint8_t deep_sleep_reset;
+extern Alarm_t alarm1;
 
 static const char *TAG = "deep-sleep";
-extern uint8_t buttonPressed;
-
-
 /* Variable holding number of times ESP32 restarted since first boot.
  * It is placed into RTC memory using RTC_DATA_ATTR and
  * maintains its value when ESP32 wakes from deep sleep.
  */
 
 // Function to save the struct into NVS
-esp_err_t saveStructToNVS(const char *namespace, const char *key, MyStruct *data) {
+esp_err_t saveStructToNVS(const char *namespace, const char *key, Alarm_t *data) {
     nvs_handle_t nvsHandle;
     esp_err_t err = nvs_open(namespace, NVS_READWRITE, &nvsHandle);
 
     if (err == ESP_OK) {
         // Serialize the struct into bytes
-        err = nvs_set_blob(nvsHandle, key, data, sizeof(MyStruct));
+        err = nvs_set_blob(nvsHandle, key, data, sizeof(Alarm_t));
         if (err == ESP_OK) {
             err = nvs_commit(nvsHandle); // Save the data
         }
@@ -46,13 +39,13 @@ esp_err_t saveStructToNVS(const char *namespace, const char *key, MyStruct *data
 }
 
 // Function to retrieve the struct from NVS
-esp_err_t getStructFromNVS(const char *namespace, const char *key, MyStruct *data) {
+esp_err_t getStructFromNVS(const char *namespace, const char *key, Alarm_t *data) {
     nvs_handle_t nvsHandle;
     esp_err_t err = nvs_open(namespace, NVS_READONLY, &nvsHandle);
 
     if (err == ESP_OK) {
         // Get the serialized struct from NVS
-        size_t blobSize = sizeof(MyStruct);
+        size_t blobSize = sizeof(Alarm_t);
         err = nvs_get_blob(nvsHandle, key, data, &blobSize);
         nvs_close(nvsHandle);
     }
@@ -64,9 +57,8 @@ esp_err_t getStructFromNVS(const char *namespace, const char *key, MyStruct *dat
 void enterDeepSleep() {
     // Configure the sleep timer and enter deep sleep
     ESP_LOGI(TAG, "Entering Deep sleep");
-    MyStruct myData = {42, 3.14, "Hello, NVS"};
 
-    esp_err_t saveResult = saveStructToNVS("storage", "my_data", &myData);
+    esp_err_t saveResult = saveStructToNVS("storage", "alarm", &alarm1);
     if (saveResult == ESP_OK) {
         printf("Struct saved to NVS\n");
     } else {
@@ -77,18 +69,23 @@ void enterDeepSleep() {
 }
 
 
-void watchActivityMonitor(void* pvParameter) {
+void watchActivityMonitor(void* pvParameter)
+{
     TickType_t lastActivityTime = xTaskGetTickCount();
 
-    while (1) {
+    while (1) 
+    {
         // Check for smartwatch activity
         // If active, reset the inactivity timer
         // If inactive for the specified timeout, enter deep sleep
-        if (buttonPressed) {
+        if (deep_sleep_reset) 
+        {
             ESP_LOGI(TAG, "Reset Deep sleep counter");
             lastActivityTime = xTaskGetTickCount(); // Reset the inactivity timer
-            buttonPressed = 0;
-        } else {
+            deep_sleep_reset = 0;
+        } 
+        else 
+        {
             // Check if the inactivity timeout has been reached
             if ((xTaskGetTickCount() - lastActivityTime) >= (INACTIVITY_TIMEOUT_SECONDS * configTICK_RATE_HZ)) {
                 // Smartwatch is inactive, enter deep sleep
@@ -102,17 +99,16 @@ void watchActivityMonitor(void* pvParameter) {
 
 void deep_sleep_config(void) 
 {
-    buttonPressed = 0;
+    deep_sleep_reset = 0;
 
-    MyStruct retrievedData;
 // Retrieve the struct from NVS
-    esp_err_t getResult = getStructFromNVS("storage", "my_data", &retrievedData);
+    // esp_err_t getResult = getStructFromNVS("storage", "alarm", &alarm1);
 
-    if (getResult == ESP_OK) {
-        printf("Retrieved struct from NVS: value1=%d, value2=%f, str=%s\n", retrievedData.value1, retrievedData.value2, retrievedData.str);
-    } else {
-        printf("Failed to retrieve struct from NVS\n");
-    }
+    // if (getResult == ESP_OK) {
+    //     printf("Retrieved alarm from NVS: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
+    // } else {
+    //     printf("Failed to retrieve struct from NVS\n");
+    // }
     // Initialize your hardware and application
     
     esp_sleep_enable_ext0_wakeup(MODE_PIN, 0); 
