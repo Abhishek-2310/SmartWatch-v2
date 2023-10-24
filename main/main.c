@@ -15,6 +15,7 @@
 #include "esp_err.h"
 #include "lvgl.h"
 
+#include "esp_sleep.h"
 #include "protocol_examples_common.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
@@ -60,17 +61,20 @@ static const char * TAG = "Button";
 /**********************
  *  GLOBAL VARIABLES
  **********************/
-Mode_t Mode = TIME_MODE;
+RTC_DATA_ATTR Mode_t Mode = TIME_MODE;
 const Mode_t Mode_Table[4] = {TIME_MODE,
                             WEATHER_MODE,
                             ALARM_MODE,
                             STOPWATCH_MODE};
 uint8_t mode_index = 0;
+uint8_t buttonPressed;
+RTC_DATA_ATTR int bootcount = 0;
 
 /**********************
  *      HANDLES
  **********************/
 TaskHandle_t ModeTask_Handle;
+TaskHandle_t NTP_Task_Handle;
 TaskHandle_t EspCommsTask_Handle;
 extern TaskHandle_t StateTask_Handle;
 /**********************
@@ -78,10 +82,12 @@ extern TaskHandle_t StateTask_Handle;
  **********************/
 static void guiTask(void *pvParameter);
 // extern void example_lvgl_demo_ui(lv_disp_t *disp);
-extern void get_ntp_time(void);
 extern void get_weather_update(void);
 extern void lv_task_modes(void);
 extern void alarm_config(void);
+void deep_sleep_config(void);
+
+extern void NTP_Task(void *pvParameter);
 extern void Esp_Comms_Task(void *pvParameter);
 
 /**********************
@@ -128,6 +134,7 @@ void Mode_Task(void* pvParameters)
             Mode = Mode_Table[mode_index];
             ESP_LOGI(TAG, "mode: %d", mode_index);
             xTaskNotifyGive(StateTask_Handle);
+            buttonPressed = 1;
         }
     }
 }
@@ -194,9 +201,17 @@ static void example_increase_lvgl_tick(void *arg)
 
 void app_main(void)
 {
+    bootcount++;
+    ESP_LOGI(TAG, "Boot Count: %d", bootcount);
 
-    ESP_LOGI(mainTag, "Connect to WiFi");
+    ESP_LOGI(mainTag, "Create guiTask");
+    //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
+    //  * Otherwise there can be problem such as memory corruption and so on.
+    //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
+    xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);
+
     // Connect to WiFi     
+    ESP_LOGI(mainTag, "Connect to WiFi");
     ESP_ERROR_CHECK( nvs_flash_init() );
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK( esp_event_loop_create_default() );
@@ -207,10 +222,12 @@ void app_main(void)
      */
     ESP_ERROR_CHECK(example_connect());
 
+    xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
+    // get_ntp_time();
 
-    get_ntp_time();
     get_weather_update();
     alarm_config();
+    deep_sleep_config();
     
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
     gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
@@ -218,11 +235,7 @@ void app_main(void)
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
     xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);
 
-    ESP_LOGI(mainTag, "Create guiTask");
-    //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
-    //  * Otherwise there can be problem such as memory corruption and so on.
-    //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
-    xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);
+    
 }
 
 

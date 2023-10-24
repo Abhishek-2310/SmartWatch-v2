@@ -57,7 +57,7 @@ void get_temp_pressure_humidity(const char *json_string)
     double temp = cJSON_GetObjectItemCaseSensitive(obj, "temp")->valuedouble;
     int pressure = cJSON_GetObjectItemCaseSensitive(obj, "pressure")->valueint;
     int humidity = cJSON_GetObjectItemCaseSensitive(obj, "humidity")->valueint;
-    printf("Temperature: %0.00f°C\nPressure: %d hPa\nHumidity: %d%%\n", temp, pressure, humidity);
+    // printf("Temperature: %0.00f°C\nPressure: %d hPa\nHumidity: %d%%\n", temp, pressure, humidity);
     
     weather_temp = temp;
     weather_pressure = pressure;

@@ -40,10 +40,9 @@ extern double weather_temp;
 extern int weather_pressure;
 extern int weather_humidity;
 
-extern Mode_t Mode;
+extern RTC_DATA_ATTR Mode_t Mode;
 
 extern Alarm_t alarm1;
-
 TaskHandle_t StateTask_Handle;
 extern SemaphoreHandle_t xGuiSemaphore;
 /**********************
@@ -89,7 +88,7 @@ void lv_task_modes(void)
     lv_style_set_bg_color(&style_screen, lv_color_black());
     lv_obj_add_style(tv, &style_screen, 0); 
 
-    lv_display_time_create(t1);
+    // lv_display_time_create(t1);
     alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t3);
     lv_timer_pause(alarm_timer);
     // lv_display_weather_create(t2);

@@ -4,10 +4,11 @@
 /**********************
  *  GLOBAL VARIABLES
  **********************/
-Alarm_t alarm1;
+Alarm_t alarm1 = {12,30};
 uint8_t count = 0;
 BaseType_t set_hour = pdTRUE;
 static const char *TAG = "alarm";
+extern uint8_t buttonPressed;
 
 
 TaskHandle_t AlarmTask_Handle;
@@ -78,12 +79,16 @@ void Set_Rst_Task(void *params)
                 ESP_LOGI(TAG, "hours: %d", alarm1.hours);
                 ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
             }
+            
         }
         if (reset_button_state == 0) 
         {
             set_hour = !set_hour;
             ESP_LOGI(TAG, "Set hour: %d", set_hour);
         }
+
+        buttonPressed = 1;
+
     }
 }
 
