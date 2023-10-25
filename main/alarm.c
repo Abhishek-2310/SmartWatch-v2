@@ -6,15 +6,19 @@
 /**********************
  *  GLOBAL VARIABLES
  **********************/
+extern RTC_DATA_ATTR Mode_t Mode; 
 extern Alarm_t alarm1;
-BaseType_t set_hour = pdTRUE;
 extern uint8_t deep_sleep_reset;
+extern bool set_weather_mode;
+
+BaseType_t set_hour = pdTRUE;
 
 static const char *TAG = "alarm";
 
 TaskHandle_t AlarmTask_Handle;
 TaskHandle_t Set_task_handle;
 TaskHandle_t Reset_task_handle;
+extern TaskHandle_t StateTask_Handle;
 
 /**********************
  * INTERRUPT CALLBACKS
@@ -75,35 +79,6 @@ void Alarm_Task(void * pvParameters)
 
 void Set_Task(void *params)
 {
-    // while (1) 
-    // {
-    //     // Block on entry until notification from mode recieved
-    //     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-    //     // Wait for a short debounce delay
-    //     vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
-
-    //     if (gpio_get_level(SET_PIN) == 0) 
-    //     {
-    //         if(set_hour)
-    //         {
-    //             alarm1.hours = (alarm1.hours + 1) % 24;
-    //             ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
-    //             ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
-    //         }
-    //         else
-    //         {
-    //             alarm1.minutes = (alarm1.minutes + 1) % 60;
-    //             ESP_LOGI(TAG, "hours: %d", alarm1.hours);
-    //             ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
-    //         }
-            
-    //     }
-
-    //     deep_sleep_reset = 1;
-
-    // }
-
     uint32_t button_down_time = 0;
     bool button_pressed = false;
     bool block_task = true;
@@ -127,7 +102,7 @@ void Set_Task(void *params)
             // Check if the button is held for a long time
             if ((xTaskGetTickCount() - button_down_time) >= (LONG_PRESS_DELAY / portTICK_PERIOD_MS))
             {
-                ESP_LOGI(TAG, "Reset Long Press");
+                ESP_LOGI(TAG, "Set Long Press");
                 alarm1.enabled = 1;
                 xTaskNotifyGive(AlarmTask_Handle);
                 ESP_LOGI(TAG, "Enabled Alarm");
@@ -140,20 +115,38 @@ void Set_Task(void *params)
             // Check if the button was pressed for a short duration
             if (button_pressed)
             {
+                ESP_LOGI(TAG, "Set Short Press");
+                switch (Mode)
+                {
+                    case WEATHER_MODE:
+
+                        set_weather_mode = !set_weather_mode;
+                        ESP_LOGI(TAG, "weather mode set to: %d", set_weather_mode);
+                        xTaskNotifyGive(StateTask_Handle);
+                        break;
+
+                    case ALARM_MODE:
+
+                        if(set_hour)
+                        {
+                            alarm1.hours = (alarm1.hours + 1) % 24;
+                            ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
+                            ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
+                        }
+                        else
+                        {
+                            alarm1.minutes = (alarm1.minutes + 1) % 60;
+                            ESP_LOGI(TAG, "hours: %d", alarm1.hours);
+                            ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
+                        }
+
+                        break;
+
+                    default:
+                        break;
+                }
                 // Perform the short-press action here
-                ESP_LOGI(TAG, "Reset Short Press");
-                if(set_hour)
-                {
-                    alarm1.hours = (alarm1.hours + 1) % 24;
-                    ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
-                    ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
-                }
-                else
-                {
-                    alarm1.minutes = (alarm1.minutes + 1) % 60;
-                    ESP_LOGI(TAG, "hours: %d", alarm1.hours);
-                    ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
-                }
+                
                 button_pressed = false; // Release the button
             }
 
@@ -221,7 +214,7 @@ void alarm_config(void)
 {
     ESP_LOGI(TAG, "PushButton Config");
 
-    gpio_config_t io_conf_set, io_conf_rst, io_conf_mode;
+    gpio_config_t io_conf_set, io_conf_rst;
     // Configure the GPIO pin for the button as an input
     io_conf_set.intr_type = GPIO_INTR_NEGEDGE;
     io_conf_set.mode = GPIO_MODE_INPUT;
@@ -238,6 +231,7 @@ void alarm_config(void)
     io_conf_rst.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&io_conf_rst);
 
+    gpio_config_t io_conf_mode;
      // Configure the GPIO pin for the button as an input
     io_conf_mode.intr_type = GPIO_INTR_NEGEDGE;
     io_conf_mode.mode = GPIO_MODE_INPUT;
@@ -246,13 +240,13 @@ void alarm_config(void)
     io_conf_mode.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&io_conf_mode);
 
-     // Configure the GPIO pin for the button as an input
-    io_conf_mode.intr_type = GPIO_INTR_NEGEDGE;
-    io_conf_mode.mode = GPIO_MODE_INPUT;
-    io_conf_mode.pin_bit_mask = (1ULL << COMMS_PIN);
-    io_conf_mode.pull_up_en = GPIO_PULLUP_ENABLE;
-    io_conf_mode.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    gpio_config(&io_conf_mode);
+    //  // Configure the GPIO pin for the button as an input
+    // io_conf_mode.intr_type = GPIO_INTR_NEGEDGE;
+    // io_conf_mode.mode = GPIO_MODE_INPUT;
+    // io_conf_mode.pin_bit_mask = (1ULL << COMMS_PIN);
+    // io_conf_mode.pull_up_en = GPIO_PULLUP_ENABLE;
+    // io_conf_mode.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    // gpio_config(&io_conf_mode);
 
     gpio_install_isr_service(0);
 

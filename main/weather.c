@@ -27,46 +27,68 @@ char *response_data = NULL;
 size_t response_len = 0;
 bool all_chunks_received = false;
 
-char weather_status[20];
+char weather_status[10];
 double weather_temp = 0.0;
+double weather_speed = 0.0;
 int weather_pressure = 0;
 int weather_humidity = 0;
 
+char description_array[4][10];
+uint8_t description_index = 0;
+
 void get_temp_pressure_humidity(const char *json_string)
 {
-   
-    cJSON *root = cJSON_Parse(json_string);
-    cJSON *weather_param = cJSON_GetObjectItemCaseSensitive(root, "weather");
-    cJSON *obj = cJSON_GetObjectItemCaseSensitive(root, "main");
-
-    cJSON *parameter;
-    cJSON_ArrayForEach(parameter, weather_param) 
+   cJSON *root = cJSON_Parse(json_string);
+    cJSON *list = cJSON_GetObjectItem(root, "list");
+    if (!list || !cJSON_IsArray(list)) {
+        printf("Error: 'list' not found or is not an array.\n");
+        cJSON_Delete(root);
+        return;
+    }
+    
+    for (int i = 0; i < cJSON_GetArraySize(list); i=i+8) 
     {
-    /* Each element is an object with unknown field(s) */
-        cJSON *elem;
-        cJSON_ArrayForEach(elem, parameter) 
+        cJSON *item = cJSON_GetArrayItem(list, i);
+        cJSON *main = cJSON_GetObjectItem(item, "main");
+        cJSON *weather = cJSON_GetObjectItem(item, "weather");
+        cJSON *wind = cJSON_GetObjectItem(item, "wind");
+
+        if (main && cJSON_IsArray(weather) && cJSON_GetArraySize(weather) > 0) 
         {
-            if(cJSON_IsString(elem) && (memcmp(elem->string, "main", 4) == 0) && elem->valuestring != NULL)
+            if(i == 0)
             {
-                memcpy(weather_status, elem->valuestring, strlen(elem->valuestring));
-                printf("Weather: %s\n", weather_status);  
-            }   
+                double temp1 = cJSON_GetObjectItem(main, "temp")->valuedouble;
+                int pressure1 = cJSON_GetObjectItem(main, "pressure")->valueint;
+                int humidity1 = cJSON_GetObjectItem(main, "humidity")->valueint;
+                const char* description1 = cJSON_GetObjectItem(cJSON_GetArrayItem(weather, 0), "main")->valuestring;
+                double speed1 = cJSON_GetObjectItem(wind, "speed")->valuedouble;
+
+                weather_temp = temp1;
+                weather_pressure = pressure1;
+                weather_humidity = humidity1;
+                weather_speed = speed1;
+                memcpy(weather_status, description1, strlen(description1));
+                weather_status[strlen(description1)] = '\0';
+                printf("Status: %s\nTemperature: %0.00f°C\nPressure: %d hPa\nHumidity: %d%%\nSpeed: %0.0f mph\n", weather_status, temp1, pressure1, humidity1, speed1);
+            }
+            else
+            {            
+                const char* description2 = cJSON_GetObjectItem(cJSON_GetArrayItem(weather, 0), "main")->valuestring;
+                memcpy(description_array[description_index], description2, strlen(description2));
+                description_array[description_index][strlen(description2)] = '\0';
+                printf("Day: %d Weather: %s\n", i/8, description_array[description_index]);
+                description_index = (description_index + 1) % 4;
+            }
         }
     }
 
-    double temp = cJSON_GetObjectItemCaseSensitive(obj, "temp")->valuedouble;
-    int pressure = cJSON_GetObjectItemCaseSensitive(obj, "pressure")->valueint;
-    int humidity = cJSON_GetObjectItemCaseSensitive(obj, "humidity")->valueint;
-    // printf("Temperature: %0.00f°C\nPressure: %d hPa\nHumidity: %d%%\n", temp, pressure, humidity);
-    
-    weather_temp = temp;
-    weather_pressure = pressure;
-    weather_humidity = humidity;
-    printf("Temperature: %0.00f°C\nPressure: %d hPa\nHumidity: %d%%\n", weather_temp, weather_pressure, weather_humidity);
-
     cJSON_Delete(root);
-    free(response_data);
-    ESP_LOGI(TAG, "response_data freed!");
+    ESP_LOGI(TAG, "root deleted!");
+    
+    if (response_data) {
+        free(response_data);
+        ESP_LOGI(TAG, "response_data freed!");
+    }
 
     // Reset Response parameters
     response_data = NULL;
@@ -85,7 +107,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
             break;
         case HTTP_EVENT_ON_FINISH:
             all_chunks_received = true;
-            ESP_LOGI("OpenWeatherAPI", "Received data: %s", response_data);
+            // ESP_LOGI("OpenWeatherAPI", "Received data: %s", response_data);
             get_temp_pressure_humidity(response_data);
             break;
         default:
@@ -105,7 +127,7 @@ void openweather_api_http(void *pvParameters)
         snprintf(open_weather_map_url,
              sizeof(open_weather_map_url),
              "%s%s%s%s%s%s%s",
-             "http://api.openweathermap.org/data/2.5/weather?q=",
+             "http://api.openweathermap.org/data/2.5/forecast?q=",
              city,
              ",",
              country_code,
