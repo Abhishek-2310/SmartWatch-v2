@@ -20,6 +20,7 @@
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_mode0_create(lv_obj_t * parent);
 static void lv_display_alarm_create(lv_timer_t * timer);
+static void lv_display_stopwatch_create(lv_timer_t * timer);
 static void State_task(void * pvParameters);
 
 /**********************
@@ -30,8 +31,10 @@ static lv_obj_t * t1;
 static lv_obj_t * t2;
 static lv_obj_t * t3;
 static lv_obj_t * t4;
+static lv_obj_t * t5;
 
 lv_timer_t * alarm_timer;
+lv_timer_t * stopwatch_timer;
 /**********************
  * EXTERNAL VARIABLES
  **********************/
@@ -42,13 +45,14 @@ extern double weather_temp;
 extern double weather_speed;
 extern int weather_pressure;
 extern int weather_humidity;
-
 extern char description_array[4][10];
+bool set_weather_mode = 0;
 
 extern RTC_DATA_ATTR Mode_t Mode;
 
-bool set_weather_mode = 0;
 extern Alarm_t alarm1;
+extern StopWatch_t stopWatch1;
+
 TaskHandle_t StateTask_Handle;
 extern SemaphoreHandle_t xGuiSemaphore;
 /**********************
@@ -76,6 +80,7 @@ void lv_task_modes(void)
     t2 = lv_tabview_add_tab(tv, "Weather_mode0");
     t3 = lv_tabview_add_tab(tv, "Weather_mode1");
     t4 = lv_tabview_add_tab(tv, "Alarm");
+    t5 = lv_tabview_add_tab(tv, "StopWatch");
 
     // Background Style to turn it black
     static lv_style_t style_screen;
@@ -86,6 +91,9 @@ void lv_task_modes(void)
     // lv_display_time_create(t1);
     alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t4);
     lv_timer_pause(alarm_timer);
+
+    stopwatch_timer = lv_timer_create(lv_display_stopwatch_create, 100, t5);
+    lv_timer_pause(stopwatch_timer);
     // lv_display_weather_mode0_create(t2);
 
     // lv_timer_create(State_task, 5000, NULL);
@@ -330,6 +338,45 @@ static void lv_display_alarm_create(lv_timer_t * timer)
     lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
     
 }
+
+
+static void lv_display_stopwatch_create(lv_timer_t * timer)
+{
+    ESP_LOGI(TAG, "lv_display stopwatch");
+
+    lv_obj_clean(timer->user_data);
+
+    static lv_style_t style_alarm_title;
+    lv_style_init(&style_alarm_title);
+	lv_obj_t * label_alarm_title = lv_label_create(timer->user_data);
+    
+    lv_style_set_text_font(&style_alarm_title, &lv_font_montserrat_24); 
+    lv_style_set_text_color(&style_alarm_title, lv_color_white());
+    lv_style_set_text_letter_space(&style_alarm_title, 2);
+
+    lv_obj_add_style(label_alarm_title, &style_alarm_title, 0);
+    lv_label_set_text(label_alarm_title, "Stopwatch");  // set text
+
+    lv_obj_align(label_alarm_title, LV_ALIGN_TOP_MID, 0, 60);
+
+    char alarm_buffer[15];
+
+    snprintf(alarm_buffer, 15, "%02d:%02d:%02d", stopWatch1.minutes, stopWatch1.seconds, stopWatch1.centiSeconds);
+
+    static lv_style_t style_alarm;
+    lv_style_init(&style_alarm);
+	lv_obj_t * label_alarm = lv_label_create(timer->user_data);
+    
+    lv_style_set_text_font(&style_alarm, &lv_font_montserrat_36); 
+    lv_style_set_text_color(&style_alarm, lv_palette_main(LV_PALETTE_YELLOW));
+    lv_style_set_text_letter_space(&style_alarm, 2);
+
+    lv_obj_add_style(label_alarm, &style_alarm, 0);
+    lv_label_set_text(label_alarm, alarm_buffer);  // set text
+
+    lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
+    
+}
 // static void tab_changer_task_cb(lv_timer_t * task)
 // {
 //     ESP_LOGI(TAG, "Switching tasks");
@@ -364,9 +411,10 @@ static void State_task(void * pvParameters)
             switch(Mode)
             {
                 case TIME_MODE:
+                    lv_timer_pause(stopwatch_timer);
                     gpio_intr_disable(SET_PIN);
                     gpio_intr_disable(RESET_PIN);
-                    
+
                     ESP_LOGI(TAG, "Time State");
                     lv_tabview_set_act(tv, 0, LV_ANIM_ON);
                     lv_display_time_create(t1);
@@ -402,6 +450,8 @@ static void State_task(void * pvParameters)
                     
                     lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
+                    lv_tabview_set_act(tv, 4, LV_ANIM_ON);
+                    lv_timer_resume(stopwatch_timer);
 
                     break;
             }

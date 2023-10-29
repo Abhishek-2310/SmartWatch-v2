@@ -30,6 +30,13 @@ typedef struct
     uint8_t enabled;
 }Alarm_t;
 
+typedef struct 
+{
+    uint8_t minutes;
+    uint8_t seconds;
+    uint8_t centiSeconds;
+    /* data */
+}StopWatch_t;
 /**********************
  *      ENUMS
  **********************/

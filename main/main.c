@@ -232,8 +232,8 @@ void app_main(void)
     // NTP Task
     xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
 
-    // get_weather_update();
-    // deep_sleep_config();
+    get_weather_update();
+    deep_sleep_config();
     alarm_config();
     stopWatch_config();
 

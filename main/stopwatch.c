@@ -2,14 +2,8 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_timer.h"
+#include "common.h"
 
-typedef struct 
-{
-    uint8_t minutes;
-    uint8_t seconds;
-    uint8_t centiSeconds;
-    /* data */
-}StopWatch_t;
 
 esp_timer_handle_t timer;
 bool stopWatch_running = false;
