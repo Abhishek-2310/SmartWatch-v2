@@ -364,6 +364,9 @@ static void State_task(void * pvParameters)
             switch(Mode)
             {
                 case TIME_MODE:
+                    gpio_intr_disable(SET_PIN);
+                    gpio_intr_disable(RESET_PIN);
+                    
                     ESP_LOGI(TAG, "Time State");
                     lv_tabview_set_act(tv, 0, LV_ANIM_ON);
                     lv_display_time_create(t1);
@@ -396,8 +399,7 @@ static void State_task(void * pvParameters)
                     break;
 
                 case STOPWATCH_MODE:
-                    gpio_intr_disable(SET_PIN);
-                    gpio_intr_disable(RESET_PIN);
+                    
                     lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
 

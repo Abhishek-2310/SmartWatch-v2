@@ -11,6 +11,10 @@ extern Alarm_t alarm1;
 extern uint8_t deep_sleep_reset;
 extern bool set_weather_mode;
 
+extern bool stopWatch_running;
+extern bool pause_watch;
+extern bool reset_watch;
+
 BaseType_t set_hour = pdTRUE;
 
 static const char *TAG = "alarm";
@@ -19,6 +23,7 @@ TaskHandle_t AlarmTask_Handle;
 TaskHandle_t Set_task_handle;
 TaskHandle_t Reset_task_handle;
 extern TaskHandle_t StateTask_Handle;
+extern TaskHandle_t StopWatchTask_Handle;
 
 /**********************
  * INTERRUPT CALLBACKS
@@ -141,6 +146,15 @@ void Set_Task(void *params)
                         }
 
                         break;
+                    
+                    case STOPWATCH_MODE:
+                        // start and stop stopwatch
+                        stopWatch_running = !stopWatch_running;
+                        ESP_LOGI(TAG, "stopwatch state: %d", stopWatch_running);
+                        if(stopWatch_running)
+                            xTaskNotifyGive(StopWatchTask_Handle);
+
+                        break;
 
                     default:
                         break;
@@ -197,8 +211,30 @@ void Reset_Task(void *params)
             {
                 // Perform the short-press action here
                 ESP_LOGI(TAG, "Reset Short Press");
-                set_hour = !set_hour;
-                ESP_LOGI(TAG, "set hour: %d", set_hour);
+
+                switch (Mode)
+                {
+                    case ALARM_MODE:
+
+                        set_hour = !set_hour;
+                        ESP_LOGI(TAG, "set hour: %d", set_hour);
+
+                        break;
+                    
+                    case STOPWATCH_MODE:
+                        // start and stop stopwatch
+                        if(!stopWatch_running)
+                        {
+                            reset_watch = true;
+                            xTaskNotifyGive(StopWatchTask_Handle);
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+
+                
                 button_pressed = false; // Release the button
             }
 

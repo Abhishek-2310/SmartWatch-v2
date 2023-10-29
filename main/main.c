@@ -88,6 +88,7 @@ static void guiTask(void *pvParameter);
 extern void get_weather_update(void);
 extern void lv_task_modes(void);
 extern void alarm_config(void);
+extern void stopWatch_config(void);
 void deep_sleep_config(void);
 
 extern void NTP_Task(void *pvParameter);
@@ -231,19 +232,12 @@ void app_main(void)
     // NTP Task
     xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
 
-    get_weather_update();
+    // get_weather_update();
     // deep_sleep_config();
     alarm_config();
+    stopWatch_config();
 
-    // if reset then initialise alarm
-    // if(bootcount <= 1)
-    // {
-    //     alarm1.hours = 12;
-    //     alarm1.minutes = 30;
-    //     alarm1.enabled = 0;
-    // }
     // printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
-    
     
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
     // gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
