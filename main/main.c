@@ -237,6 +237,13 @@ void app_main(void)
     alarm_config();
     stopWatch_config();
 
+    if(bootcount <= 1)
+    {
+        alarm1.hours = 0;
+        alarm1.minutes = 0;
+        alarm1.enabled = false;
+    }
+
     // printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
     
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
