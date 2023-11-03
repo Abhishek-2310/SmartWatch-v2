@@ -33,7 +33,7 @@
 #include "common.h"
 
 static const char *TAG = "mqtt_example";
-
+esp_mqtt_client_handle_t client;
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
@@ -79,6 +79,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     case MQTT_EVENT_PUBLISHED:
         ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        esp_mqtt_client_disconnect(client);
+        ESP_LOGI(TAG, "Disconnecting...");
         break;
     case MQTT_EVENT_DATA:
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
@@ -107,7 +109,7 @@ static void mqtt_app_start(void)
         .broker.address.uri = CONFIG_BROKER_URL,
     };
 
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    client = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
@@ -121,40 +123,32 @@ void Esp_Comms_Task(void *pvParameter)
 {
     ESP_LOGI(TAG, "Entered ESP comms");
 
-// Block on entry until notification from mode recieved
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-    // Wait for a short debounce delay
-    vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
-
-    int set_button_state = gpio_get_level(COMMS_PIN);
-    if (set_button_state == 0) 
+    while (1) 
     {
-        ESP_LOGI(TAG, "[APP] Startup..");
-        ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-        ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
+        // Block on entry until notification from comms recieved
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        esp_log_level_set("*", ESP_LOG_INFO);
-        esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
-        esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
-        esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
-        esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
-        esp_log_level_set("transport", ESP_LOG_VERBOSE);
-        esp_log_level_set("outbox", ESP_LOG_VERBOSE);
+        // Wait for a short debounce delay
+        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
 
-        // ESP_ERROR_CHECK(nvs_flash_init());
-        // ESP_ERROR_CHECK(esp_netif_init());
-        // ESP_ERROR_CHECK(esp_event_loop_create_default());
+        int set_button_state = gpio_get_level(COMMS_PIN);
+        if (set_button_state == 0) 
+        {
+            ESP_LOGI(TAG, "[APP] Startup..");
+            ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
+            ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-        // /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-        //  * Read "Establishing Wi-Fi or Ethernet Connection" section in
-        //  * examples/protocols/README.md for more information about this function.
-        //  */
-        // ESP_ERROR_CHECK(example_connect());
+            esp_log_level_set("*", ESP_LOG_INFO);
+            esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
+            esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
+            esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
+            esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
+            esp_log_level_set("transport", ESP_LOG_VERBOSE);
+            esp_log_level_set("outbox", ESP_LOG_VERBOSE);
 
-        mqtt_app_start();
+            mqtt_app_start();
+        }
     }
-    
     
 
     vTaskDelete(NULL);

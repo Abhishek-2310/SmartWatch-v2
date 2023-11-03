@@ -70,7 +70,7 @@ uint8_t mode_index = 0;
 uint8_t deep_sleep_reset;
 RTC_DATA_ATTR int bootcount = 0;
 
-Alarm_t alarm1;
+extern Alarm_t alarm1;
 /**********************
  *      HANDLES
  **********************/
@@ -87,10 +87,13 @@ static void guiTask(void *pvParameter);
 // extern void example_lvgl_demo_ui(lv_disp_t *disp);
 extern void get_weather_update(void);
 extern void lv_task_modes(void);
+
+extern void button_config(void);
 extern void alarm_config(void);
 extern void stopWatch_config(void);
 extern void deep_sleep_config(void);
 extern void battery_monitor_config(void);
+
 extern void NTP_Task(void *pvParameter);
 extern void Esp_Comms_Task(void *pvParameter);
 
@@ -232,6 +235,8 @@ void app_main(void)
     // NTP Task
     xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
 
+    // configuration functions
+    button_config();
     get_weather_update();
     deep_sleep_config();
     alarm_config();
@@ -248,10 +253,10 @@ void app_main(void)
     // printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
     
     gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
-    // gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
+    gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
 
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
-    // xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);    
+    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 2, &EspCommsTask_Handle);
 }
 
 

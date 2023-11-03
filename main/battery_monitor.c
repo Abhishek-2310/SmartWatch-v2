@@ -18,6 +18,7 @@ void Battery_Monitor_Task(void* pvParameter)
         ESP_LOGI(TAG, "Raw value: %i, Voltage: %.2f V", adc_value, voltage);
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
+    vTaskDelete(NULL);
 }
 
 void battery_monitor_config(void)
