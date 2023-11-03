@@ -89,8 +89,8 @@ extern void get_weather_update(void);
 extern void lv_task_modes(void);
 extern void alarm_config(void);
 extern void stopWatch_config(void);
-void deep_sleep_config(void);
-
+extern void deep_sleep_config(void);
+extern void battery_monitor_config(void);
 extern void NTP_Task(void *pvParameter);
 extern void Esp_Comms_Task(void *pvParameter);
 
@@ -221,7 +221,7 @@ void app_main(void)
     //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
     xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);
 
-    // Connect to WiFi     
+    // // Connect to WiFi     
     ESP_LOGI(mainTag, "Connect to WiFi");
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
@@ -236,6 +236,7 @@ void app_main(void)
     deep_sleep_config();
     alarm_config();
     stopWatch_config();
+    battery_monitor_config();
 
     if(bootcount <= 1)
     {
