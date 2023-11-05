@@ -5,13 +5,20 @@
 
 static const char *TAG = "buttons";
 
-extern RTC_DATA_ATTR Mode_t Mode;
 extern Alarm_t alarm1;
+RTC_DATA_ATTR Mode_t Mode = TIME_MODE;
+const Mode_t Mode_Table[4] = {TIME_MODE,
+                            WEATHER_MODE,
+                            ALARM_MODE,
+                            STOPWATCH_MODE};
+uint8_t mode_index = 0;
 
 BaseType_t set_hour = pdTRUE;
 
 TaskHandle_t Set_task_handle;
 TaskHandle_t Reset_task_handle;
+TaskHandle_t EspCommsTask_Handle;
+TaskHandle_t ModeTask_Handle;
 extern TaskHandle_t StateTask_Handle;
 extern TaskHandle_t StopWatchTask_Handle;
 extern TaskHandle_t AlarmTask_Handle;
@@ -24,6 +31,7 @@ extern bool reset_watch;
 
 extern uint8_t deep_sleep_reset;
 
+extern void Esp_Comms_Task(void *pvParameter);
 
 /**********************
  * INTERRUPT CALLBACKS
@@ -52,9 +60,53 @@ static void IRAM_ATTR reset_interrupt_handler(void *args)
     gpio_intr_enable(RESET_PIN);
 }
 
+static void IRAM_ATTR mode_interrupt_handler(void *args)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the Set_Rst_task that the button was pressed
+    vTaskNotifyGiveFromISR(ModeTask_Handle, &xHigherPriorityTaskWoken);
+
+    // Clear the interrupt flag and exit
+    gpio_intr_disable(MODE_PIN);
+    gpio_intr_enable(MODE_PIN);
+}
+
+static void IRAM_ATTR comms_interrupt_handler(void *args)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the Set_Rst_task that the button was pressed
+    vTaskNotifyGiveFromISR(EspCommsTask_Handle, &xHigherPriorityTaskWoken);
+
+    // Clear the interrupt flag and exit
+    gpio_intr_disable(COMMS_PIN);
+    gpio_intr_enable(COMMS_PIN);
+}
+
 /**********************
  *    BUTTON TASKS
  **********************/
+void Mode_Task(void* pvParameters)
+{
+    while(1)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
+
+        int mode_button_state = gpio_get_level(MODE_PIN);
+        if(mode_button_state == 0)
+        {
+            mode_index = (mode_index + 1) % 4;
+            Mode = Mode_Table[mode_index];
+            ESP_LOGI(TAG, "mode: %d", mode_index);
+            xTaskNotifyGive(StateTask_Handle);
+            deep_sleep_reset = 1;
+        }
+    }
+}
+
 void Set_Task(void *params)
 {
     uint32_t button_down_time = 0;
@@ -275,7 +327,11 @@ void button_config(void)
 
     gpio_isr_handler_add(SET_PIN, set_interrupt_handler, (void *)SET_PIN);
     gpio_isr_handler_add(RESET_PIN, reset_interrupt_handler, (void *)RESET_PIN);
+    gpio_isr_handler_add(MODE_PIN, mode_interrupt_handler, (void *)MODE_PIN);
+    gpio_isr_handler_add(COMMS_PIN, comms_interrupt_handler, (void *)COMMS_PIN);
 
     xTaskCreate(Set_Task, "Set_Task", 2048, NULL, 1, &Set_task_handle);
     xTaskCreate(Reset_Task, "Reset_Task", 2048, NULL, 1, &Reset_task_handle);
+    xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
+    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 2, &EspCommsTask_Handle);
 }
