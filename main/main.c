@@ -3,9 +3,6 @@
  *
  * SPDX-License-Identifier: CC0-1.0
  */
-
-
-
 #include "esp_timer.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
@@ -57,12 +54,10 @@
  **********************/
 static const char * guiTag = "guiTask";
 static const char * mainTag = "app_main";
-static const char * TAG = "Button";
 /**********************
  *  GLOBAL VARIABLES
  **********************/
 
-uint8_t deep_sleep_reset;
 RTC_DATA_ATTR int bootcount = 0;
 
 extern Alarm_t alarm1;
@@ -165,7 +160,7 @@ void app_main(void)
     //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
     xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);
 
-    // // Connect to WiFi     
+    // Connect to WiFi     
     ESP_LOGI(mainTag, "Connect to WiFi");
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
@@ -179,10 +174,10 @@ void app_main(void)
     // configuration functions
     button_config();
     get_weather_update();
-    deep_sleep_config();
-    alarm_config();
-    stopWatch_config();
-    battery_monitor_config();
+    // deep_sleep_config();
+    // alarm_config();
+    // stopWatch_config();
+    // battery_monitor_config();
 
     if(bootcount <= 1)
     {

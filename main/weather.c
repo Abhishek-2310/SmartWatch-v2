@@ -13,6 +13,8 @@
 #include "esp_http_client.h"
 #include <cJSON.h>
 
+#define MINUTES_TO_MILLISECONDS 60 * 1000
+
 static const char *TAG = "display_weather";
 
 // API key from OpenWeatherMap 
@@ -164,7 +166,7 @@ void openweather_api_http(void *pvParameters)
         }
         esp_http_client_cleanup(client);
     
-        vTaskDelay(pdMS_TO_TICKS(30000));
+        vTaskDelay(pdMS_TO_TICKS(10 * MINUTES_TO_MILLISECONDS));
     }
 
     vTaskDelete(NULL);

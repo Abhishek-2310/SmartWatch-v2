@@ -13,7 +13,7 @@
 #define uS_TO_S_FACTOR 1000000
 // #define MODE_PIN 26
 
-extern uint8_t deep_sleep_reset;
+uint8_t deep_sleep_reset;
 extern Alarm_t alarm1;
 
 static const char *TAG = "deep-sleep";

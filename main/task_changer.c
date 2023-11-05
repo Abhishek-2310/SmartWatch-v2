@@ -38,6 +38,10 @@ lv_timer_t * stopwatch_timer;
 /**********************
  * EXTERNAL VARIABLES
  **********************/
+LV_IMG_DECLARE(sunny_img_png);
+LV_IMG_DECLARE(cloudy_img_png);
+LV_IMG_DECLARE(snow_img_png);
+
 extern char strftime_buf[64];
 
 extern char weather_status[10];
@@ -183,9 +187,6 @@ static void lv_display_time_create(lv_obj_t * parent)
     lv_label_set_text(label_date, date_str);  // set text
 
     lv_obj_align(label_date, LV_ALIGN_CENTER, 0, 80);
-// #if LV_DEMO_WIDGETS_SLIDESHOW
-//     tab_content_anim_create(parent);
-// #endif
 }
 
 static void lv_display_weather_mode0_create(lv_obj_t * parent)
@@ -195,22 +196,38 @@ static void lv_display_weather_mode0_create(lv_obj_t * parent)
 
     lv_obj_clean(parent);
 
+    if(memcmp(weather_status, "Clouds", 7) == 0)
+    {
+        lv_obj_t* cloudy_img = lv_img_create(parent);
+        lv_img_set_src(cloudy_img, &cloudy_img_png);
+
+        lv_obj_align(cloudy_img, LV_ALIGN_TOP_MID, 0, 40);
+        lv_obj_set_size(cloudy_img, 98, 67);
+    }
+    // else if (memcmp(weather_status, "Rain", 10) == 0)
+    // {
+
+    // }
+    // lv_obj_t* sunny_img = lv_img_create(parent);
+    // lv_img_set_src(sunny_img, &sunny_img_png);
+
+    // lv_obj_align(sunny_img, LV_ALIGN_TOP_MID, 0, -20);
+    // lv_obj_set_size(sunny_img, 128, 128);
+
+    
+
+    // lv_obj_t* snow_img = lv_img_create(parent);
+    // lv_img_set_src(snow_img, &snow_img_png);
+
+    // lv_obj_align(snow_img, LV_ALIGN_BOTTOM_MID, 0, -20);
+    // lv_obj_set_size(snow_img, 128, 128);
+
+    // lv_img_set_zoom(snow_img, 192);
+
     char weather_display_buffer[80];
 
-    static lv_style_t style_weather_status;
-    lv_style_init(&style_weather_status);
-	lv_obj_t * label_weather_status = lv_label_create(parent);
-    
-    lv_style_set_text_font(&style_weather_status, &lv_font_montserrat_24); 
-    lv_style_set_text_color(&style_weather_status, lv_palette_main(LV_PALETTE_YELLOW));
-    lv_style_set_text_letter_space(&style_weather_status, 2);
-
-    lv_obj_add_style(label_weather_status, &style_weather_status, 0);
-    lv_label_set_text(label_weather_status, weather_status);  // set text
-
-    lv_obj_align(label_weather_status, LV_ALIGN_TOP_MID, 0, 60);
-
-    snprintf(weather_display_buffer, 80, "Temp      : %0.00f°C\nPressure : %d mBar\nHumidity: %d%%\nSpeed     :%0.0f mph", weather_temp, weather_pressure, weather_humidity, weather_speed);
+    snprintf(weather_display_buffer, 80, "Temp      : %0.00f°C\nPressure : %d mBar\n"
+    "Humidity: %d%%\nSpeed     : %0.0f mph", weather_temp, weather_pressure, weather_humidity, weather_speed);
 
     static lv_style_t style_weather_temp;
     lv_style_init(&style_weather_temp);
