@@ -144,8 +144,6 @@ static void lv_Print_Weather_Logo(char* weather_descp, lv_obj_t * screen, bool s
 
         if(shrink_img)
             lv_img_set_zoom(today_weather_img, 128);
-        else
-            lv_img_set_zoom(today_weather_img, 192);
     }
    
 }
@@ -302,7 +300,7 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     lv_label_set_text(label_weather_status_mode1_day2, "Day 3");  // set text
     lv_obj_align(label_weather_status_mode1_day2, LV_ALIGN_LEFT_MID, 10, 0);
 
-    lv_Print_Weather_Logo("Snow", parent, true);
+    lv_Print_Weather_Logo(description_array[1], parent, true);
     lv_obj_align(today_weather_img, LV_ALIGN_RIGHT_MID, 20, 0);
     // snprintf(weather_mode1_display_buffer[3], 30, "Day %d   %s\n", 3, description_array[2]);
 
@@ -311,7 +309,7 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     lv_label_set_text(label_weather_status_mode1_day3, "Day 4");  // set text
     lv_obj_align(label_weather_status_mode1_day3, LV_ALIGN_LEFT_MID, 10, 50);
 
-    lv_Print_Weather_Logo("Sunny", parent, true);
+    lv_Print_Weather_Logo(description_array[2], parent, true);
     lv_obj_align(today_weather_img, LV_ALIGN_RIGHT_MID, 20, 50);
     // snprintf(weather_mode1_display_buffer[4], 30, "Day %d   %s", 4, description_array[3]);
 
