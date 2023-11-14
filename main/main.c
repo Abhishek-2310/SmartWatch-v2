@@ -146,11 +146,12 @@ void app_main(void)
 {
     // init stuff
     ESP_ERROR_CHECK( nvs_flash_init() );
-    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK( esp_netif_init() );
     ESP_ERROR_CHECK( esp_event_loop_create_default() );
 
     // Boot Counter
     bootcount++;
+    button_config();
     ESP_LOGI(mainTag, "Boot Count: %d", bootcount);
 
     // GUI Task
@@ -172,9 +173,8 @@ void app_main(void)
     xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
 
     // configuration functions
-    button_config();
-    get_weather_update();
-    // deep_sleep_config();
+    // get_weather_update();
+    deep_sleep_config();
     // alarm_config();
     // stopWatch_config();
     // battery_monitor_config();
@@ -203,6 +203,7 @@ static void guiTask(void *pvParameter)
     static lv_disp_drv_t disp_drv;      // contains callback functions
 
     ESP_LOGI(guiTag, "Turn off LCD backlight");
+    gpio_set_level(DISPLAY_POWER, 1);
     gpio_config_t bk_gpio_config = {
         .mode = GPIO_MODE_OUTPUT,
         .pin_bit_mask = 1ULL << EXAMPLE_PIN_NUM_BK_LIGHT
@@ -295,7 +296,6 @@ static void guiTask(void *pvParameter)
     // example_lvgl_demo_ui(disp);
     // display_time();
     lv_task_modes();
-
     while (1) 
     {
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance

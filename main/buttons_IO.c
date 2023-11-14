@@ -13,6 +13,9 @@ const Mode_t Mode_Table[4] = {TIME_MODE,
                             STOPWATCH_MODE};
 uint8_t mode_index = 0;
 
+extern bool led1_state;
+extern bool led2_state;
+
 BaseType_t set_hour = pdTRUE;
 
 TaskHandle_t Set_task_handle;
@@ -77,7 +80,8 @@ static void IRAM_ATTR comms_interrupt_handler(void *args)
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     // Notify the Set_Rst_task that the button was pressed
-    vTaskNotifyGiveFromISR(EspCommsTask_Handle, &xHigherPriorityTaskWoken);
+    vTaskNotifyGiveFromISR(ModeTask_Handle, &xHigherPriorityTaskWoken);
+    // vTaskNotifyGiveFromISR(EspCommsTask_Handle, &xHigherPriorityTaskWoken);
 
     // Clear the interrupt flag and exit
     gpio_intr_disable(COMMS_PIN);
@@ -96,11 +100,20 @@ void Mode_Task(void* pvParameters)
         vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
 
         int mode_button_state = gpio_get_level(MODE_PIN);
+        int comms_button_state = gpio_get_level(COMMS_PIN);
         if(mode_button_state == 0)
         {
             mode_index = (mode_index + 1) % 4;
             Mode = Mode_Table[mode_index];
-            ESP_LOGI(TAG, "mode: %d", mode_index);
+            ESP_LOGI(TAG, "mode_index: %d", mode_index);
+            xTaskNotifyGive(StateTask_Handle);
+            deep_sleep_reset = 1;
+        }
+
+        if(comms_button_state == 0)
+        {
+            Mode = (Mode == ESP_COMMS_MODE) ? mode_index : ESP_COMMS_MODE;
+            ESP_LOGI(TAG, "mode: %d", ESP_COMMS_MODE);
             xTaskNotifyGive(StateTask_Handle);
             deep_sleep_reset = 1;
         }
@@ -148,6 +161,13 @@ void Set_Task(void *params)
                 ESP_LOGI(TAG, "Set Short Press");
                 switch (Mode)
                 {
+                    case ESP_COMMS_MODE:
+                        led1_state = !led1_state;
+                        ESP_LOGI(TAG, "LED1 state set to: %d", led1_state);
+                        xTaskNotifyGive(StateTask_Handle);
+                        xTaskNotifyGive(EspCommsTask_Handle);
+                        break;
+
                     case WEATHER_MODE:
 
                         set_weather_mode = !set_weather_mode;
@@ -239,6 +259,12 @@ void Reset_Task(void *params)
 
                 switch (Mode)
                 {
+                    case ESP_COMMS_MODE:
+                        led2_state = !led2_state;
+                        ESP_LOGI(TAG, "LED2 state set to: %d", led2_state);
+                        xTaskNotifyGive(StateTask_Handle);
+                        break;
+
                     case ALARM_MODE:
 
                         set_hour = !set_hour;
@@ -284,7 +310,14 @@ void button_config(void)
     io_conf_motor.pull_up_en = 0;                    // Disable pull-up resistor
     gpio_config(&io_conf_motor);
 
-    // gpio_set_level(MOTOR_PIN, 1);
+    gpio_config_t io_conf_display_power;
+     // Configure the GPIO pin for the button as an input
+    io_conf_display_power.intr_type = GPIO_INTR_DISABLE;
+    io_conf_display_power.mode = GPIO_MODE_OUTPUT;
+    io_conf_display_power.pin_bit_mask = (1ULL << DISPLAY_POWER);
+    io_conf_display_power.pull_down_en = 0;                  // Disable pull-down resistor
+    io_conf_display_power.pull_up_en = 0;                    // Disable pull-up resistor
+    gpio_config(&io_conf_display_power);
 
     ESP_LOGI(TAG, "PushButton Config");
 
@@ -333,5 +366,5 @@ void button_config(void)
     xTaskCreate(Set_Task, "Set_Task", 2048, NULL, 1, &Set_task_handle);
     xTaskCreate(Reset_Task, "Reset_Task", 2048, NULL, 1, &Reset_task_handle);
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
-    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 2, &EspCommsTask_Handle);
+    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);
 }

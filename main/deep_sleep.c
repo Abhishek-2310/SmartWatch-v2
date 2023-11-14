@@ -11,6 +11,7 @@
 
 #define INACTIVITY_TIMEOUT_SECONDS 60  // Adjust as needed
 #define uS_TO_S_FACTOR 1000000
+
 // #define MODE_PIN 26
 
 uint8_t deep_sleep_reset;
@@ -113,10 +114,15 @@ void watchActivityMonitor(void* pvParameter)
             // Check if the inactivity timeout has been reached
             if ((xTaskGetTickCount() - lastActivityTime) >= (INACTIVITY_TIMEOUT_SECONDS * configTICK_RATE_HZ)) {
                 // Smartwatch is inactive, enter deep sleep
+                gpio_set_level(DISPLAY_POWER, 0);
                 if(alarm1.enabled)
                 {
                     setRTCAlarm();
                 }
+                // gpio_set_level(MOTOR_PIN, 1);
+                // vTaskDelay(2000);
+                // gpio_set_level(MOTOR_PIN, 0);
+
                 enterDeepSleep();
             }
         }

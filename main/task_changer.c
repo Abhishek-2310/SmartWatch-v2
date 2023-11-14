@@ -27,11 +27,19 @@ static void State_task(void * pvParameters);
  *  STATIC VARIABLES
  **********************/
 static lv_obj_t * tv;
+static lv_obj_t * t0;   // comms display
 static lv_obj_t * t1;
 static lv_obj_t * t2;
 static lv_obj_t * t3;
 static lv_obj_t * t4;
 static lv_obj_t * t5;
+
+lv_obj_t* led1_img;
+lv_obj_t* led2_img;
+lv_obj_t* sw1;
+lv_obj_t* sw2;
+bool secondRun = false;
+
 
 lv_obj_t* today_weather_img;
 
@@ -40,10 +48,16 @@ lv_timer_t * stopwatch_timer;
 /**********************
  * EXTERNAL VARIABLES
  **********************/
+LV_IMG_DECLARE(bulb_on_png);
+LV_IMG_DECLARE(bulb_off_png);
+
 LV_IMG_DECLARE(sunny_img_png);
 LV_IMG_DECLARE(cloudy_img_png);
 LV_IMG_DECLARE(snow_img_png);
 LV_IMG_DECLARE(rain_img_png);
+
+bool led1_state = false;
+bool led2_state = false;
 
 extern char strftime_buf[64];
 
@@ -56,6 +70,8 @@ extern char description_array[4][10];
 bool set_weather_mode = 0;
 
 extern RTC_DATA_ATTR Mode_t Mode;
+extern RTC_DATA_ATTR int bootcount;
+
 
 extern Alarm_t alarm1;
 extern StopWatch_t stopWatch1;
@@ -83,6 +99,7 @@ void lv_task_modes(void)
     lv_obj_t * tab_buttons = lv_tabview_get_tab_btns(tv);
     lv_obj_add_flag(tab_buttons, LV_OBJ_FLAG_HIDDEN);
 
+    t0 = lv_tabview_add_tab(tv, "ESP_Comms");
     t1 = lv_tabview_add_tab(tv, "Time");
     t2 = lv_tabview_add_tab(tv, "Weather_mode0");
     t3 = lv_tabview_add_tab(tv, "Weather_mode1");
@@ -95,6 +112,7 @@ void lv_task_modes(void)
     lv_style_set_bg_color(&style_screen, lv_color_black());
     lv_obj_add_style(tv, &style_screen, 0); 
 
+    
     // lv_display_time_create(t1);
     alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t4);
     lv_timer_pause(alarm_timer);
@@ -105,6 +123,12 @@ void lv_task_modes(void)
 
     // lv_timer_create(State_task, 5000, NULL);
     xTaskCreatePinnedToCore(State_task, "State", 2048*2, NULL, 0, &StateTask_Handle, 1);
+
+    if(bootcount > 1)
+    {
+        // Boot from deep sleep, not power on reset
+        xTaskNotifyGive(StateTask_Handle);
+    }
 }
 
 
@@ -129,7 +153,7 @@ static void lv_Print_Weather_Logo(char* weather_descp, lv_obj_t * screen, bool s
         if(shrink_img)
             lv_img_set_zoom(today_weather_img, 144);
     }
-    else if (memcmp(weather_descp, "Sunny", 5) == 0)
+    else if (memcmp(weather_descp, "Clear", 5) == 0)
     {
         lv_img_set_src(today_weather_img, &sunny_img_png);
         lv_obj_set_size(today_weather_img, 86, 89);
@@ -150,6 +174,74 @@ static void lv_Print_Weather_Logo(char* weather_descp, lv_obj_t * screen, bool s
 /**********************
  STATIC DISPLAY FUNCTIONS
  **********************/
+static void lv_display_esp_comms_create(lv_obj_t * parent)
+{
+    ESP_LOGI(TAG, "lv_display esp_comms tab");
+    
+    lv_obj_clean(parent);
+
+    static lv_style_t style_esp_comms_title;
+    lv_style_init(&style_esp_comms_title);
+	lv_obj_t * label_esp_comms_title = lv_label_create(parent);
+    
+    lv_style_set_text_font(&style_esp_comms_title, &lv_font_montserrat_20); 
+    lv_style_set_text_color(&style_esp_comms_title, lv_color_white());
+    lv_style_set_text_letter_space(&style_esp_comms_title, 2);
+
+    lv_obj_add_style(label_esp_comms_title, &style_esp_comms_title, 0);
+    lv_label_set_text(label_esp_comms_title, "ESP COMMS");  // set text
+
+    lv_obj_align(label_esp_comms_title, LV_ALIGN_TOP_MID, 0, 40);
+
+
+	lv_obj_t * led1_label = lv_label_create(parent);
+    lv_obj_add_style(led1_label, &style_esp_comms_title, 0);
+    lv_label_set_text(led1_label, "LED1");  // set text
+    lv_obj_align(led1_label, LV_ALIGN_LEFT_MID, 20, -40);
+
+
+    lv_obj_t * led2_label = lv_label_create(parent);
+    lv_obj_add_style(led2_label, &style_esp_comms_title, 0);
+    lv_label_set_text(led2_label, "LED2");  // set text
+    lv_obj_align(led2_label, LV_ALIGN_LEFT_MID, 20, 50);
+
+
+    led1_img = lv_img_create(parent);
+    led2_img = lv_img_create(parent);
+    sw1 = lv_switch_create(parent);
+    sw2 = lv_switch_create(parent);
+
+    if(led1_state)
+    {
+        lv_img_set_src(led1_img, &bulb_on_png);
+        lv_obj_add_state(sw1, LV_STATE_CHECKED);
+    }
+    else
+    {
+        lv_img_set_src(led1_img, &bulb_off_png);
+        lv_obj_add_state(sw1, !LV_STATE_CHECKED);
+    }
+    lv_obj_set_size(led1_img, 32, 32);
+    lv_obj_align(led1_img, LV_ALIGN_RIGHT_MID, -20, -10);
+    lv_obj_align(sw1, LV_ALIGN_LEFT_MID, 20, -10);
+
+    if(led2_state)
+    {
+        lv_img_set_src(led2_img, &bulb_on_png);
+        lv_obj_add_state(sw2, LV_STATE_CHECKED);
+    }
+    else
+    {
+        lv_img_set_src(led2_img, &bulb_off_png);
+        lv_obj_add_state(sw1, !LV_STATE_CHECKED);
+    }
+    lv_obj_set_size(led2_img, 32, 32);
+    lv_obj_align(led2_img, LV_ALIGN_RIGHT_MID, -20, 80);
+    lv_obj_align(sw2, LV_ALIGN_LEFT_MID, 20, 80);
+
+}
+
+
 static void lv_display_time_create(lv_obj_t * parent)
 {
     // lv_page_set_scrl_layout(parent, LV_LAYOUT_PRETTY_TOP);
@@ -159,6 +251,9 @@ static void lv_display_time_create(lv_obj_t * parent)
     struct tm timeinfo;
     time(&now);
 
+    // Set timezone to Eastern Standard Time and print local time
+    setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
+    tzset();
     localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The current date/time in Canada is: %s", strftime_buf);
@@ -267,6 +362,7 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     
     ESP_LOGI(TAG, "lv_display weather mode 1");
 
+    lv_obj_clean(t3);   // Clean 5 day forecast tab to increase performance
     lv_obj_clean(parent);
 
     static lv_style_t style_weather_status_mode1;
@@ -327,6 +423,7 @@ static void lv_display_alarm_create(lv_timer_t * timer)
 {
     ESP_LOGI(TAG, "lv_display alarm");
 
+    lv_obj_clean(t3);   // Clean 5 day forecast tab to increase performance
     lv_obj_clean(timer->user_data);
 
     static lv_style_t style_alarm_title;
@@ -399,28 +496,8 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
     lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
     
 }
-// static void tab_changer_task_cb(lv_timer_t * task)
-// {
-//     ESP_LOGI(TAG, "Switching tasks");
 
-//     uint16_t act = lv_tabview_get_tab_act(tv);
-//     act++;
-//     if(act >= 2) act = 0;
-
-//     lv_tabview_set_act(tv, act, LV_ANIM_ON);
-
-//     switch(act) {
-//     case 0:
-//         lv_display_time_create(t1);
-//         // tab_content_anim_create(t1);
-//         break;
-//     case 1:
-//         lv_display_weather_mode0_create(t2);
-//         // tab_content_anim_create(t2);
-//         break;
-//     }
-// }
-
+/* STATE CHANGING TASK */
 static void State_task(void * pvParameters)
 {
 
@@ -432,14 +509,23 @@ static void State_task(void * pvParameters)
         {
             switch(Mode)
             {
+                case ESP_COMMS_MODE:
+                    gpio_intr_enable(SET_PIN);
+                    gpio_intr_enable(RESET_PIN);
+                    lv_tabview_set_act(tv, 0, LV_ANIM_ON);
+                    lv_display_esp_comms_create(t0);
+
+                    break;
+
                 case TIME_MODE:
                     lv_timer_pause(stopwatch_timer);
                     gpio_intr_disable(SET_PIN);
                     gpio_intr_disable(RESET_PIN);
 
                     ESP_LOGI(TAG, "Time State");
-                    lv_tabview_set_act(tv, 0, LV_ANIM_ON);
+                    lv_tabview_set_act(tv, 1, LV_ANIM_ON);
                     lv_display_time_create(t1);
+
                     break;
 
                 case WEATHER_MODE:
@@ -449,21 +535,22 @@ static void State_task(void * pvParameters)
                     if(set_weather_mode == 0)
                     {
                         ESP_LOGI(TAG, "Weather State: Mode0");
-                        lv_tabview_set_act(tv, 1, LV_ANIM_ON);
+                        lv_tabview_set_act(tv, 2, LV_ANIM_ON);
                         lv_display_weather_mode0_create(t2);
                     }
                     else
                     {
                         ESP_LOGI(TAG, "Weather State: Mode1");
-                        lv_tabview_set_act(tv, 2, LV_ANIM_ON);
+                        lv_tabview_set_act(tv, 3, LV_ANIM_ON);
                         lv_display_weather_mode1_create(t3);
                     }
+
                     break;
 
                 case ALARM_MODE:
                     gpio_intr_enable(RESET_PIN);
                     ESP_LOGI(TAG, "Alarm State");
-                    lv_tabview_set_act(tv, 3, LV_ANIM_ON);
+                    lv_tabview_set_act(tv, 4, LV_ANIM_ON);
                     lv_timer_resume(alarm_timer);
 
                     break;
@@ -472,7 +559,7 @@ static void State_task(void * pvParameters)
                     
                     lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
-                    lv_tabview_set_act(tv, 4, LV_ANIM_ON);
+                    lv_tabview_set_act(tv, 5, LV_ANIM_ON);
                     lv_timer_resume(stopwatch_timer);
 
                     break;
@@ -481,7 +568,6 @@ static void State_task(void * pvParameters)
             xSemaphoreGive(xGuiSemaphore);
         }
 
-        // vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 

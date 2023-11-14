@@ -61,8 +61,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        msg_id = esp_mqtt_client_subscribe(client, "my_topic", 0);
-        ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
+        // msg_id = esp_mqtt_client_subscribe(client, "my_topic", 0);
+        // ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_publish(client, "my_topic", "Hi from ESP32...", 0, 1, 0);
         ESP_LOGI(TAG, "publish successful, msg_id=%d", msg_id);
@@ -79,8 +79,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     case MQTT_EVENT_PUBLISHED:
         ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-        esp_mqtt_client_disconnect(client);
-        ESP_LOGI(TAG, "Disconnecting...");
+       
         break;
     case MQTT_EVENT_DATA:
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
@@ -114,9 +113,13 @@ static void mqtt_app_start(void)
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
     
-    // To disconnect
-    // esp_mqtt_client_disconnect(client);
+    vTaskDelay(100);   // enough delay to publish and subscribe before stopped
 
+    ESP_LOGI(TAG, "mqtt stop");
+    esp_mqtt_client_stop(client);
+
+    ESP_LOGI(TAG, "Disconnecting...");
+    esp_mqtt_client_disconnect(client);
 }
 
 void Esp_Comms_Task(void *pvParameter)
@@ -129,25 +132,25 @@ void Esp_Comms_Task(void *pvParameter)
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         // Wait for a short debounce delay
-        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
+        // vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
 
-        int set_button_state = gpio_get_level(COMMS_PIN);
-        if (set_button_state == 0) 
-        {
-            ESP_LOGI(TAG, "[APP] Startup..");
-            ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-            ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
+        // int set_button_state = gpio_get_level(COMMS_PIN);
+        // if (set_button_state == 0) 
+        // {
+        ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
+        // ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-            esp_log_level_set("*", ESP_LOG_INFO);
-            esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
-            esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
-            esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
-            esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
-            esp_log_level_set("transport", ESP_LOG_VERBOSE);
-            esp_log_level_set("outbox", ESP_LOG_VERBOSE);
+        esp_log_level_set("*", ESP_LOG_INFO);
+        esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
+        esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
+        esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
+        esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
+        esp_log_level_set("transport", ESP_LOG_VERBOSE);
+        esp_log_level_set("outbox", ESP_LOG_VERBOSE);
 
-            mqtt_app_start();
-        }
+        ESP_LOGI(TAG, "MQTT Startup..");
+        mqtt_app_start();
+        // }
     }
     
 

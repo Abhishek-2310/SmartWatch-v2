@@ -4,11 +4,12 @@
 /*********************
  *      DEFINES
  *********************/
+#define DISPLAY_POWER 27
 #define SET_PIN 19
 #define MODE_PIN  26
 #define RESET_PIN 18
 #define COMMS_PIN 25
-#define MOTOR_PIN 23
+#define MOTOR_PIN 5
 #define DEBOUNCE_DELAY 30   // in ms
 /*********************
  *      INCLUDES
@@ -43,6 +44,7 @@ typedef struct
  **********************/
 typedef enum
 {
+    ESP_COMMS_MODE = -1,
     TIME_MODE,
     WEATHER_MODE,
     ALARM_MODE,
