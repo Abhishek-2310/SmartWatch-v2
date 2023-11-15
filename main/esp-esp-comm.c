@@ -35,8 +35,12 @@
 static const char *TAG = "mqtt_example";
 esp_mqtt_client_handle_t client;
 
+extern bool led1_state_cmd;
+extern bool led2_state_cmd;
 extern bool led1_state;
 extern bool led2_state;
+
+extern TaskHandle_t StateTask_Handle;
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
@@ -64,17 +68,21 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        // msg_id = esp_mqtt_client_subscribe(client, "my_topic", 0);
-        // ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
-        if(led1_state)
-            msg_id = esp_mqtt_client_publish(client, "LED1_topic", "TURN_ON_LED", 0, 1, 0);
-        else
-            msg_id = esp_mqtt_client_publish(client, "LED1_topic", "TURN_OFF_LED", 0, 1, 0);
+        
+        msg_id = esp_mqtt_client_subscribe(client, "LED1_sub_topic", 0);
+        ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
+        msg_id = esp_mqtt_client_subscribe(client, "LED2_sub_topic", 0);
+        ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
 
-        if(led2_state)
-            msg_id = esp_mqtt_client_publish(client, "LED2_topic", "TURN_ON_LED", 0, 1, 0);
+        if(led1_state_cmd)
+            msg_id = esp_mqtt_client_publish(client, "LED1_pub_topic", "TURN_ON_LED", 0, 1, 0);
         else
-            msg_id = esp_mqtt_client_publish(client, "LED2_topic", "TURN_OFF_LED", 0, 1, 0);
+            msg_id = esp_mqtt_client_publish(client, "LED1_pub_topic", "TURN_OFF_LED", 0, 1, 0);
+
+        if(led2_state_cmd)
+            msg_id = esp_mqtt_client_publish(client, "LED2_pub_topic", "TURN_ON_LED", 0, 1, 0);
+        else
+            msg_id = esp_mqtt_client_publish(client, "LED2_pub_topic", "TURN_OFF_LED", 0, 1, 0);
 
         ESP_LOGI(TAG, "publish successful, msg_id=%d", msg_id);
         break;
@@ -96,6 +104,19 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
+        if(strstr(event->topic, "LED1_sub_topic"))
+        {
+            ESP_LOGI(TAG, "LED state is %s", event->data);
+            led1_state = (strstr(event->data, "LED_ON")) ? true : false;
+            xTaskNotifyGive(StateTask_Handle);
+        }
+        else if(strstr(event->topic, "LED2_sub_topic"))
+        {
+            ESP_LOGI(TAG, "LED state is %s", event->data);
+            led2_state = (strstr(event->data, "LED_ON")) ? true : false;
+            xTaskNotifyGive(StateTask_Handle);
+        }
+
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -132,6 +153,7 @@ static void mqtt_app_start(void)
     ESP_LOGI(TAG, "Stopping mqtt client");
     esp_mqtt_client_stop(client);
 
+    ESP_LOGI(TAG, "Destroying mqtt client object");
     esp_mqtt_client_destroy(client);
 }
 

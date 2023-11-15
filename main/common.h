@@ -10,7 +10,7 @@
 #define RESET_PIN 18
 #define COMMS_PIN 25
 #define MOTOR_PIN 5
-#define DEBOUNCE_DELAY 30   // in ms
+#define DEBOUNCE_DELAY 50   // in ms
 /*********************
  *      INCLUDES
  *********************/

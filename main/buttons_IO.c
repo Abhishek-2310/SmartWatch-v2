@@ -1,20 +1,20 @@
 #include "common.h"
 #include "driver/gpio.h"
 
-#define LONG_PRESS_DELAY    3000   // Button press duration for long action in milliseconds
+#define LONG_PRESS_DELAY 3000 // Button press duration for long action in milliseconds
 
 static const char *TAG = "buttons";
 
 extern Alarm_t alarm1;
 RTC_DATA_ATTR Mode_t Mode = TIME_MODE;
 const Mode_t Mode_Table[4] = {TIME_MODE,
-                            WEATHER_MODE,
-                            ALARM_MODE,
-                            STOPWATCH_MODE};
+                              WEATHER_MODE,
+                              ALARM_MODE,
+                              STOPWATCH_MODE};
 uint8_t mode_index = 0;
 
-extern bool led1_state;
-extern bool led2_state;
+bool led1_state_cmd;
+bool led2_state_cmd;
 
 BaseType_t set_hour = pdTRUE;
 
@@ -91,9 +91,9 @@ static void IRAM_ATTR comms_interrupt_handler(void *args)
 /**********************
  *    BUTTON TASKS
  **********************/
-void Mode_Task(void* pvParameters)
+void Mode_Task(void *pvParameters)
 {
-    while(1)
+    while (1)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
@@ -101,7 +101,7 @@ void Mode_Task(void* pvParameters)
 
         int mode_button_state = gpio_get_level(MODE_PIN);
         int comms_button_state = gpio_get_level(COMMS_PIN);
-        if(mode_button_state == 0)
+        if (mode_button_state == 0)
         {
             mode_index = (mode_index + 1) % 4;
             Mode = Mode_Table[mode_index];
@@ -110,7 +110,7 @@ void Mode_Task(void* pvParameters)
             deep_sleep_reset = 1;
         }
 
-        if(comms_button_state == 0)
+        if (comms_button_state == 0)
         {
             Mode = (Mode == ESP_COMMS_MODE) ? mode_index : ESP_COMMS_MODE;
             ESP_LOGI(TAG, "mode: %d", ESP_COMMS_MODE);
@@ -126,9 +126,9 @@ void Set_Task(void *params)
     bool button_pressed = false;
     bool block_task = true;
 
-    while (1) 
+    while (1)
     {
-        if(block_task)
+        if (block_task)
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
@@ -161,51 +161,50 @@ void Set_Task(void *params)
                 ESP_LOGI(TAG, "Set Short Press");
                 switch (Mode)
                 {
-                    case ESP_COMMS_MODE:
-                        led1_state = !led1_state;
-                        ESP_LOGI(TAG, "LED1 state set to: %d", led1_state);
-                        xTaskNotifyGive(StateTask_Handle);
-                        xTaskNotifyGive(EspCommsTask_Handle);
-                        break;
+                case ESP_COMMS_MODE:
+                    led1_state_cmd = !led1_state_cmd;
+                    ESP_LOGI(TAG, "Command LED1 state to: %d", led1_state_cmd);
+                    xTaskNotifyGive(EspCommsTask_Handle);
+                    break;
 
-                    case WEATHER_MODE:
+                case WEATHER_MODE:
 
-                        set_weather_mode = !set_weather_mode;
-                        ESP_LOGI(TAG, "weather mode set to: %d", set_weather_mode);
-                        xTaskNotifyGive(StateTask_Handle);
-                        break;
+                    set_weather_mode = !set_weather_mode;
+                    ESP_LOGI(TAG, "weather mode set to: %d", set_weather_mode);
+                    xTaskNotifyGive(StateTask_Handle);
+                    break;
 
-                    case ALARM_MODE:
+                case ALARM_MODE:
 
-                        if(set_hour)
-                        {
-                            alarm1.hours = (alarm1.hours + 1) % 24;
-                            ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
-                            ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
-                        }
-                        else
-                        {
-                            alarm1.minutes = (alarm1.minutes + 1) % 60;
-                            ESP_LOGI(TAG, "hours: %d", alarm1.hours);
-                            ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
-                        }
+                    if (set_hour)
+                    {
+                        alarm1.hours = (alarm1.hours + 1) % 24;
+                        ESP_LOGI(TAG, "Hours Inc Button pressed!, hours: %d", alarm1.hours);
+                        ESP_LOGI(TAG, "minutes: %d", alarm1.minutes);
+                    }
+                    else
+                    {
+                        alarm1.minutes = (alarm1.minutes + 1) % 60;
+                        ESP_LOGI(TAG, "hours: %d", alarm1.hours);
+                        ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
+                    }
 
-                        break;
-                    
-                    case STOPWATCH_MODE:
-                        // start and stop stopwatch
-                        stopWatch_running = !stopWatch_running;
-                        ESP_LOGI(TAG, "stopwatch state: %d", stopWatch_running);
-                        if(stopWatch_running)
-                            xTaskNotifyGive(StopWatchTask_Handle);
+                    break;
 
-                        break;
+                case STOPWATCH_MODE:
+                    // start and stop stopwatch
+                    stopWatch_running = !stopWatch_running;
+                    ESP_LOGI(TAG, "stopwatch state: %d", stopWatch_running);
+                    if (stopWatch_running)
+                        xTaskNotifyGive(StopWatchTask_Handle);
 
-                    default:
-                        break;
+                    break;
+
+                default:
+                    break;
                 }
                 // Perform the short-press action here
-                
+
                 button_pressed = false; // Release the button
             }
 
@@ -223,9 +222,9 @@ void Reset_Task(void *params)
     bool button_pressed = false;
     bool block_task = true;
 
-    while (1) 
+    while (1)
     {
-        if(block_task)
+        if (block_task)
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_DELAY));
@@ -259,34 +258,32 @@ void Reset_Task(void *params)
 
                 switch (Mode)
                 {
-                    case ESP_COMMS_MODE:
-                        led2_state = !led2_state;
-                        ESP_LOGI(TAG, "LED2 state set to: %d", led2_state);
-                        xTaskNotifyGive(StateTask_Handle);
-                        xTaskNotifyGive(EspCommsTask_Handle);
-                        break;
+                case ESP_COMMS_MODE:
+                    led2_state_cmd = !led2_state_cmd;
+                    ESP_LOGI(TAG, "Command LED2 state to: %d", led2_state_cmd);
+                    xTaskNotifyGive(EspCommsTask_Handle);
+                    break;
 
-                    case ALARM_MODE:
+                case ALARM_MODE:
 
-                        set_hour = !set_hour;
-                        ESP_LOGI(TAG, "set hour: %d", set_hour);
+                    set_hour = !set_hour;
+                    ESP_LOGI(TAG, "set hour: %d", set_hour);
 
-                        break;
-                    
-                    case STOPWATCH_MODE:
-                        // start and stop stopwatch
-                        if(!stopWatch_running)
-                        {
-                            reset_watch = true;
-                            xTaskNotifyGive(StopWatchTask_Handle);
-                        }
-                        break;
+                    break;
 
-                    default:
-                        break;
+                case STOPWATCH_MODE:
+                    // start and stop stopwatch
+                    if (!stopWatch_running)
+                    {
+                        reset_watch = true;
+                        xTaskNotifyGive(StopWatchTask_Handle);
+                    }
+                    break;
+
+                default:
+                    break;
                 }
 
-                
                 button_pressed = false; // Release the button
             }
 
@@ -298,26 +295,24 @@ void Reset_Task(void *params)
     }
 }
 
-
-
 void button_config(void)
 {
     ESP_LOGI(TAG, "Vibration Motor IO Config");
     gpio_config_t io_conf_motor;
-    io_conf_motor.intr_type = GPIO_INTR_DISABLE;     // Disable interrupt
-    io_conf_motor.mode = GPIO_MODE_OUTPUT;           // Set the GPIO pin as an output
+    io_conf_motor.intr_type = GPIO_INTR_DISABLE;      // Disable interrupt
+    io_conf_motor.mode = GPIO_MODE_OUTPUT;            // Set the GPIO pin as an output
     io_conf_motor.pin_bit_mask = (1ULL << MOTOR_PIN); // Choose the GPIO pin you want to configure (GPIO_NUM_2 in this case)
-    io_conf_motor.pull_down_en = 0;                  // Disable pull-down resistor
-    io_conf_motor.pull_up_en = 0;                    // Disable pull-up resistor
+    io_conf_motor.pull_down_en = 0;                   // Disable pull-down resistor
+    io_conf_motor.pull_up_en = 0;                     // Disable pull-up resistor
     gpio_config(&io_conf_motor);
 
     gpio_config_t io_conf_display_power;
-     // Configure the GPIO pin for the button as an input
+    // Configure the GPIO pin for the button as an input
     io_conf_display_power.intr_type = GPIO_INTR_DISABLE;
     io_conf_display_power.mode = GPIO_MODE_OUTPUT;
     io_conf_display_power.pin_bit_mask = (1ULL << DISPLAY_POWER);
-    io_conf_display_power.pull_down_en = 0;                  // Disable pull-down resistor
-    io_conf_display_power.pull_up_en = 0;                    // Disable pull-up resistor
+    io_conf_display_power.pull_down_en = 0; // Disable pull-down resistor
+    io_conf_display_power.pull_up_en = 0;   // Disable pull-up resistor
     gpio_config(&io_conf_display_power);
 
     ESP_LOGI(TAG, "PushButton Config");
@@ -340,7 +335,7 @@ void button_config(void)
     gpio_config(&io_conf_rst);
 
     gpio_config_t io_conf_mode;
-     // Configure the GPIO pin for the button as an input
+    // Configure the GPIO pin for the button as an input
     io_conf_mode.intr_type = GPIO_INTR_NEGEDGE;
     io_conf_mode.mode = GPIO_MODE_INPUT;
     io_conf_mode.pin_bit_mask = (1ULL << MODE_PIN);
@@ -349,7 +344,7 @@ void button_config(void)
     gpio_config(&io_conf_mode);
 
     gpio_config_t io_conf_comms;
-     // Configure the GPIO pin for the button as an input
+    // Configure the GPIO pin for the button as an input
     io_conf_comms.intr_type = GPIO_INTR_NEGEDGE;
     io_conf_comms.mode = GPIO_MODE_INPUT;
     io_conf_comms.pin_bit_mask = (1ULL << COMMS_PIN);

@@ -197,13 +197,13 @@ static void lv_display_esp_comms_create(lv_obj_t * parent)
 	lv_obj_t * led1_label = lv_label_create(parent);
     lv_obj_add_style(led1_label, &style_esp_comms_title, 0);
     lv_label_set_text(led1_label, "LED1");  // set text
-    lv_obj_align(led1_label, LV_ALIGN_LEFT_MID, 20, -40);
+    lv_obj_align(led1_label, LV_ALIGN_LEFT_MID, 30, -40);
 
 
     lv_obj_t * led2_label = lv_label_create(parent);
     lv_obj_add_style(led2_label, &style_esp_comms_title, 0);
     lv_label_set_text(led2_label, "LED2");  // set text
-    lv_obj_align(led2_label, LV_ALIGN_LEFT_MID, 20, 50);
+    lv_obj_align(led2_label, LV_ALIGN_LEFT_MID, 30, 50);
 
 
     led1_img = lv_img_create(parent);
@@ -223,7 +223,7 @@ static void lv_display_esp_comms_create(lv_obj_t * parent)
     }
     lv_obj_set_size(led1_img, 32, 32);
     lv_obj_align(led1_img, LV_ALIGN_RIGHT_MID, -20, -10);
-    lv_obj_align(sw1, LV_ALIGN_LEFT_MID, 20, -10);
+    lv_obj_align(sw1, LV_ALIGN_LEFT_MID, 30, -10);
 
     if(led2_state)
     {
@@ -237,7 +237,7 @@ static void lv_display_esp_comms_create(lv_obj_t * parent)
     }
     lv_obj_set_size(led2_img, 32, 32);
     lv_obj_align(led2_img, LV_ALIGN_RIGHT_MID, -20, 80);
-    lv_obj_align(sw2, LV_ALIGN_LEFT_MID, 20, 80);
+    lv_obj_align(sw2, LV_ALIGN_LEFT_MID, 30, 80);
 
 }
 
