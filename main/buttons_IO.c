@@ -263,6 +263,7 @@ void Reset_Task(void *params)
                         led2_state = !led2_state;
                         ESP_LOGI(TAG, "LED2 state set to: %d", led2_state);
                         xTaskNotifyGive(StateTask_Handle);
+                        xTaskNotifyGive(EspCommsTask_Handle);
                         break;
 
                     case ALARM_MODE:

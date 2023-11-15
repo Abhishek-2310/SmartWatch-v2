@@ -35,6 +35,9 @@
 static const char *TAG = "mqtt_example";
 esp_mqtt_client_handle_t client;
 
+extern bool led1_state;
+extern bool led2_state;
+
 static void log_error_if_nonzero(const char *message, int error_code)
 {
     if (error_code != 0) {
@@ -63,8 +66,16 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         // msg_id = esp_mqtt_client_subscribe(client, "my_topic", 0);
         // ESP_LOGI(TAG, "subscribe successful, msg_id=%d", msg_id);
+        if(led1_state)
+            msg_id = esp_mqtt_client_publish(client, "LED1_topic", "TURN_ON_LED", 0, 1, 0);
+        else
+            msg_id = esp_mqtt_client_publish(client, "LED1_topic", "TURN_OFF_LED", 0, 1, 0);
 
-        msg_id = esp_mqtt_client_publish(client, "my_topic", "Hi from ESP32...", 0, 1, 0);
+        if(led2_state)
+            msg_id = esp_mqtt_client_publish(client, "LED2_topic", "TURN_ON_LED", 0, 1, 0);
+        else
+            msg_id = esp_mqtt_client_publish(client, "LED2_topic", "TURN_OFF_LED", 0, 1, 0);
+
         ESP_LOGI(TAG, "publish successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_DISCONNECTED:
@@ -115,11 +126,13 @@ static void mqtt_app_start(void)
     
     vTaskDelay(100);   // enough delay to publish and subscribe before stopped
 
-    ESP_LOGI(TAG, "mqtt stop");
-    esp_mqtt_client_stop(client);
-
     ESP_LOGI(TAG, "Disconnecting...");
     esp_mqtt_client_disconnect(client);
+
+    ESP_LOGI(TAG, "Stopping mqtt client");
+    esp_mqtt_client_stop(client);
+
+    esp_mqtt_client_destroy(client);
 }
 
 void Esp_Comms_Task(void *pvParameter)
