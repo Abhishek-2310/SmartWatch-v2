@@ -151,15 +151,16 @@ void app_main(void)
 
     // Boot Counter
     bootcount++;
-    button_config();
     ESP_LOGI(mainTag, "Boot Count: %d", bootcount);
+    
+    button_config();
 
     // GUI Task
     ESP_LOGI(mainTag, "Create guiTask");
     //  /* If you want to use a task to create the graphic, you NEED to create a Pinned task
     //  * Otherwise there can be problem such as memory corruption and so on.
     //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
-    xTaskCreatePinnedToCore(guiTask, "gui", 4096*2, NULL, 0, NULL, 1);
+    xTaskCreatePinnedToCore(guiTask, "gui", 4096, NULL, 1, NULL, 1);
 
     // Connect to WiFi     
     ESP_LOGI(mainTag, "Connect to WiFi");
@@ -170,14 +171,14 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
 
     // NTP Task
-    xTaskCreate(NTP_Task, "NTP_Task", 2048, NULL, 1, &NTP_Task_Handle);
+    xTaskCreate(NTP_Task, "NTP_Task", 1024*3, NULL, 1, &NTP_Task_Handle);
 
     // configuration functions
-    // get_weather_update();
+    get_weather_update();
     deep_sleep_config();
-    // alarm_config();
-    // stopWatch_config();
-    // battery_monitor_config();
+    alarm_config();
+    stopWatch_config();
+    battery_monitor_config();
 
     if(bootcount <= 1)
     {
@@ -293,13 +294,14 @@ static void guiTask(void *pvParameter)
     
 
     ESP_LOGI(guiTag, "Demo starts");
+
     // example_lvgl_demo_ui(disp);
     // display_time();
     lv_task_modes();
     while (1) 
     {
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(20));
 
         if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) 
         {
@@ -307,6 +309,6 @@ static void guiTask(void *pvParameter)
             lv_timer_handler();
             xSemaphoreGive(xGuiSemaphore);
         }
-       
+        // ESP_LOGI(guiTag, "GUI free memory: %d", uxTaskGetStackHighWaterMark(NULL));     
     }
 }

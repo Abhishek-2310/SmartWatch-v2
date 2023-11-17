@@ -19,9 +19,11 @@
  **********************/
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_mode0_create(lv_obj_t * parent);
+static void lv_display_charge_icon_create(lv_obj_t * parent);
 static void lv_display_alarm_create(lv_timer_t * timer);
 static void lv_display_stopwatch_create(lv_timer_t * timer);
 static void State_task(void * pvParameters);
+static void Charge_icon_task(void * pvParameters);
 
 /**********************
  *  STATIC VARIABLES
@@ -38,8 +40,12 @@ lv_obj_t* led1_img;
 lv_obj_t* led2_img;
 lv_obj_t* sw1;
 lv_obj_t* sw2;
+
 bool secondRun = false;
 
+extern uint16_t voltage;
+
+// lv_obj_t * charge_img;
 
 lv_obj_t* today_weather_img;
 
@@ -48,6 +54,11 @@ lv_timer_t * stopwatch_timer;
 /**********************
  * EXTERNAL VARIABLES
  **********************/
+LV_IMG_DECLARE(full_charge_icon_png);
+LV_IMG_DECLARE(eighty_charge_icon_png);
+LV_IMG_DECLARE(fifty_charge_icon_png);
+LV_IMG_DECLARE(twenty_charge_icon_png);
+
 LV_IMG_DECLARE(bulb_on_png);
 LV_IMG_DECLARE(bulb_off_png);
 
@@ -77,6 +88,7 @@ extern Alarm_t alarm1;
 extern StopWatch_t stopWatch1;
 
 TaskHandle_t StateTask_Handle;
+TaskHandle_t ChargeIconTask_Handle;
 extern SemaphoreHandle_t xGuiSemaphore;
 /**********************
  *        TAGS
@@ -122,7 +134,8 @@ void lv_task_modes(void)
     // lv_display_weather_mode0_create(t2);
 
     // lv_timer_create(State_task, 5000, NULL);
-    xTaskCreatePinnedToCore(State_task, "State", 2048*2, NULL, 0, &StateTask_Handle, 1);
+    xTaskCreatePinnedToCore(State_task, "State_task", 2048*2, NULL, 0, &StateTask_Handle, 1);
+    xTaskCreatePinnedToCore(Charge_icon_task, "Charge_icon_task", 2048, NULL, 0, &ChargeIconTask_Handle, 1);
 
     if(bootcount > 1)
     {
@@ -241,6 +254,10 @@ static void lv_display_esp_comms_create(lv_obj_t * parent)
 
 }
 
+// static void lv_display_charge_icon_create(lv_obj_t * parent)
+// {
+    
+// }
 
 static void lv_display_time_create(lv_obj_t * parent)
 {
@@ -323,6 +340,8 @@ static void lv_display_time_create(lv_obj_t * parent)
     lv_label_set_text(label_date, date_str);  // set text
 
     lv_obj_align(label_date, LV_ALIGN_CENTER, 0, 80);
+
+    // lv_display_charge_icon_create(parent);
 }
 
 
@@ -497,6 +516,37 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
     
 }
 
+static void Charge_icon_task(void * pvParameters)
+{
+    lv_obj_t * charge_img = lv_img_create(lv_scr_act());
+
+    while(1)
+    {
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(60000));
+
+        if(pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY))
+        {
+            if(voltage >= 2640)                         // greater than 80 
+                lv_img_set_src(charge_img, &full_charge_icon_png);
+            else if(voltage >= 1650 && voltage < 2640)  // 50 - 80
+                lv_img_set_src(charge_img, &eighty_charge_icon_png);
+            else if(voltage >= 660 && voltage < 1650)  // 20 -50
+                lv_img_set_src(charge_img, &fifty_charge_icon_png);
+            else if(voltage >= 0 && voltage < 660)     // 0 - 20
+                lv_img_set_src(charge_img, &twenty_charge_icon_png);
+
+            lv_obj_set_size(charge_img, 56, 32);
+            lv_img_set_zoom(charge_img, 128);
+            lv_obj_align(charge_img, LV_ALIGN_TOP_RIGHT, -10, 25);
+            xSemaphoreGive(xGuiSemaphore);
+        }
+        ESP_LOGI("Charge_icon_task", "stack left: %d", uxTaskGetStackHighWaterMark(NULL));
+    }
+
+    lv_obj_clean(charge_img);
+    vTaskDelete(NULL);
+}
+
 /* STATE CHANGING TASK */
 static void State_task(void * pvParameters)
 {
@@ -504,6 +554,7 @@ static void State_task(void * pvParameters)
     while(1)
     {
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
+
 
         if(pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY))
         {
@@ -564,6 +615,8 @@ static void State_task(void * pvParameters)
 
                     break;
             }
+            ESP_LOGI(TAG, "total min free memory: %ld", esp_get_minimum_free_heap_size());
+            ESP_LOGI(TAG, "Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
 
             xSemaphoreGive(xGuiSemaphore);
         }

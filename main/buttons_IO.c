@@ -362,5 +362,5 @@ void button_config(void)
     xTaskCreate(Set_Task, "Set_Task", 2048, NULL, 1, &Set_task_handle);
     xTaskCreate(Reset_Task, "Reset_Task", 2048, NULL, 1, &Reset_task_handle);
     xTaskCreate(Mode_Task, "Mode_Task", 2048, NULL, 1, &ModeTask_Handle);
-    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 2048, NULL, 1, &EspCommsTask_Handle);
+    xTaskCreate(Esp_Comms_Task, "Esp_Comms_Task", 1024*3, NULL, 1, &EspCommsTask_Handle);
 }

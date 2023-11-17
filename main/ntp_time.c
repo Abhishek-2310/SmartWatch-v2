@@ -56,6 +56,9 @@ void NTP_Task(void *pvParameter)
         xTaskNotifyGive(StateTask_Handle);
         ESP_LOGI(TAG, "state task notify from NTP");
 
+        // ESP_LOGI(TAG, "NTP stack used: %d", uxTaskGetStackHighWaterMark(NULL));
+        
+
         vTaskDelay(20000);
     }
 

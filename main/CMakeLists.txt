@@ -5,6 +5,10 @@ idf_component_register(SRCS main.c
                             weather_logos/snow_img_png.c
                             bulb_logos/bulb_on_png.c
                             bulb_logos/bulb_off_png.c
+                            charge_icons/full_charge_icon_png.c
+                            charge_icons/eighty_charge_icon_png.c
+                            charge_icons/fifty_charge_icon_png.c
+                            charge_icons/twenty_charge_icon_png.c
                             ntp_time.c 
                             weather.c 
                             alarm.c 

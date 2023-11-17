@@ -172,6 +172,7 @@ void Esp_Comms_Task(void *pvParameter)
         // int set_button_state = gpio_get_level(COMMS_PIN);
         // if (set_button_state == 0) 
         // {
+        ESP_LOGI(TAG, "ESP Comms free memory: %d", uxTaskGetStackHighWaterMark(NULL)); 
         ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
         // ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
