@@ -301,7 +301,7 @@ static void guiTask(void *pvParameter)
     while (1) 
     {
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance
-        vTaskDelay(pdMS_TO_TICKS(20));
+        vTaskDelay(pdMS_TO_TICKS(10));
 
         if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) 
         {

@@ -3,6 +3,9 @@ idf_component_register(SRCS main.c
                             weather_logos/rain_img_png.c
                             weather_logos/cloudy_img_png.c 
                             weather_logos/snow_img_png.c
+                            weather_logos/thunderstorm_img_png.c
+                            weather_logos/wind_speed_png.c
+                            weather_logos/humidity_png.c
                             bulb_logos/bulb_on_png.c
                             bulb_logos/bulb_off_png.c
                             charge_icons/full_charge_icon_png.c

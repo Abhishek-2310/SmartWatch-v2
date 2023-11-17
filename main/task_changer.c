@@ -19,7 +19,6 @@
  **********************/
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_mode0_create(lv_obj_t * parent);
-static void lv_display_charge_icon_create(lv_obj_t * parent);
 static void lv_display_alarm_create(lv_timer_t * timer);
 static void lv_display_stopwatch_create(lv_timer_t * timer);
 static void State_task(void * pvParameters);
@@ -66,6 +65,9 @@ LV_IMG_DECLARE(sunny_img_png);
 LV_IMG_DECLARE(cloudy_img_png);
 LV_IMG_DECLARE(snow_img_png);
 LV_IMG_DECLARE(rain_img_png);
+LV_IMG_DECLARE(thunderstorm_img_png);
+LV_IMG_DECLARE(humidity_png);
+LV_IMG_DECLARE(wind_speed_png);
 
 bool led1_state = false;
 bool led2_state = false;
@@ -178,6 +180,14 @@ static void lv_Print_Weather_Logo(char* weather_descp, lv_obj_t * screen, bool s
     {
         lv_img_set_src(today_weather_img, &snow_img_png);
         lv_obj_set_size(today_weather_img, 81, 83);
+
+        if(shrink_img)
+            lv_img_set_zoom(today_weather_img, 128);
+    }
+    else if (memcmp(weather_descp, "Thunderstorm", 12) == 0)
+    {
+        lv_img_set_src(today_weather_img, &thunderstorm_img_png);
+        lv_obj_set_size(today_weather_img, 90, 81);
 
         if(shrink_img)
             lv_img_set_zoom(today_weather_img, 128);
@@ -353,26 +363,71 @@ static void lv_display_weather_mode0_create(lv_obj_t * parent)
     lv_obj_clean(parent);
 
     lv_Print_Weather_Logo(weather_status, parent, false);
+    lv_img_set_zoom(today_weather_img, 320);
+    lv_obj_align(today_weather_img, LV_ALIGN_TOP_RIGHT, -15, 50);
 
-    lv_obj_align(today_weather_img, LV_ALIGN_TOP_MID, 0, 40);
+    char weather_temp_buffer[5];
 
-    char weather_display_buffer[80];
-
-    snprintf(weather_display_buffer, 80, "Temp      : %0.00f°C\nPressure : %d hPa\n"
-    "Humidity: %d%%\nSpeed     : %0.0f mph", weather_temp, weather_pressure, weather_humidity, weather_speed);
+    snprintf(weather_temp_buffer, 5, "%0.0f°", weather_temp);
 
     static lv_style_t style_weather_temp;
     lv_style_init(&style_weather_temp);
+    lv_style_set_text_font(&style_weather_temp, &lv_font_montserrat_48); 
+    lv_style_set_text_color(&style_weather_temp, lv_palette_main(LV_PALETTE_YELLOW));
+    lv_style_set_text_letter_space(&style_weather_temp, 1);
+
 	lv_obj_t * label_weather_temp = lv_label_create(parent);
-    
-    lv_style_set_text_font(&style_weather_temp, &lv_font_montserrat_16); 
-    lv_style_set_text_color(&style_weather_temp, lv_color_white());
-    lv_style_set_text_letter_space(&style_weather_temp, 2);
-
     lv_obj_add_style(label_weather_temp, &style_weather_temp, 0);
-    lv_label_set_text(label_weather_temp, weather_display_buffer);  // set text
+    lv_label_set_text(label_weather_temp, weather_temp_buffer);  // set text
+    lv_obj_align(label_weather_temp, LV_ALIGN_LEFT_MID, 10,-10);
 
-    lv_obj_align(label_weather_temp, LV_ALIGN_CENTER, 0, 40);
+
+    static lv_style_t style_weather_status;
+    lv_style_init(&style_weather_status);
+    lv_style_set_text_font(&style_weather_status, &lv_font_montserrat_24); 
+    lv_style_set_text_color(&style_weather_status, lv_color_white());
+    lv_style_set_text_letter_space(&style_weather_status, 1);
+
+	lv_obj_t * label_weather_status = lv_label_create(parent);
+    lv_obj_add_style(label_weather_status, &style_weather_status, 0);
+    lv_label_set_text(label_weather_status, weather_status);  // set text
+    lv_obj_align(label_weather_status, LV_ALIGN_LEFT_MID, 10, 30);
+
+    lv_obj_t * humidity_img = lv_img_create(parent);
+
+    lv_img_set_src(humidity_img, &humidity_png);
+    lv_obj_set_size(humidity_img, 48, 48);
+    lv_img_set_zoom(humidity_img, 156);
+    lv_obj_align(humidity_img, LV_ALIGN_BOTTOM_RIGHT, -60, -40);
+
+    char humidty_buffer[20];
+    snprintf(humidty_buffer, 20, "Humidity: %d%%", weather_humidity);
+
+    static lv_style_t style_humidity_wind;
+    lv_style_init(&style_humidity_wind);
+    lv_style_set_text_font(&style_humidity_wind, &lv_font_montserrat_12); 
+    lv_style_set_text_color(&style_humidity_wind, lv_color_white());
+    lv_style_set_text_letter_space(&style_humidity_wind, 1);
+
+	lv_obj_t * label_weather_humidity = lv_label_create(parent);
+    lv_obj_add_style(label_weather_humidity, &style_humidity_wind, 0);
+    lv_label_set_text(label_weather_humidity, humidty_buffer);  // set text
+    lv_obj_align(label_weather_humidity, LV_ALIGN_BOTTOM_RIGHT, 0, -30);
+
+    lv_obj_t * wind_speed_img = lv_img_create(parent);
+
+    lv_img_set_src(wind_speed_img, &wind_speed_png);
+    lv_obj_set_size(wind_speed_img, 48, 48);
+    lv_img_set_zoom(wind_speed_img, 156);
+    lv_obj_align(wind_speed_img, LV_ALIGN_BOTTOM_LEFT, 0, -40);
+
+    char wind_speed_buffer[20];
+    snprintf(wind_speed_buffer, 20, "Wind: %0.0lf mph", weather_speed);
+
+	lv_obj_t * label_weather_wind_speed = lv_label_create(parent);
+    lv_obj_add_style(label_weather_wind_speed, &style_humidity_wind, 0);
+    lv_label_set_text(label_weather_wind_speed, wind_speed_buffer);  // set text
+    lv_obj_align(label_weather_wind_speed, LV_ALIGN_BOTTOM_LEFT, 10, -30);
 }
 
 
@@ -433,7 +488,7 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     lv_label_set_text(label_weather_status_mode1_day4, "Day 5");  // set text
     lv_obj_align(label_weather_status_mode1_day4, LV_ALIGN_LEFT_MID, 10, 100);
 
-    lv_Print_Weather_Logo(description_array[3], parent, true);
+    lv_Print_Weather_Logo("Thunderstorm", parent, true);
     lv_obj_align(today_weather_img, LV_ALIGN_RIGHT_MID, 20, 100);
 }
 
@@ -532,7 +587,7 @@ static void Charge_icon_task(void * pvParameters)
                 lv_img_set_src(charge_img, &eighty_charge_icon_png);
             else if(voltage >= 660 && voltage < 1650)  // 20 -50
                 lv_img_set_src(charge_img, &fifty_charge_icon_png);
-            else if(voltage >= 0 && voltage < 660)     // 0 - 20
+            else if(voltage > 0 && voltage < 660)     // 0 - 20
                 lv_img_set_src(charge_img, &twenty_charge_icon_png);
 
             lv_obj_set_size(charge_img, 56, 32);
