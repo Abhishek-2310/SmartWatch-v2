@@ -12,6 +12,8 @@ idf_component_register(SRCS main.c
                             charge_icons/eighty_charge_icon_png.c
                             charge_icons/fifty_charge_icon_png.c
                             charge_icons/twenty_charge_icon_png.c
+                            switch_icons/switch_off_png.c
+                            switch_icons/switch_on_png.c
                             ntp_time.c 
                             weather.c 
                             alarm.c 
