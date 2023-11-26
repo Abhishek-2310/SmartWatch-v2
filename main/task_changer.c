@@ -19,7 +19,7 @@
  **********************/
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_mode0_create(lv_obj_t * parent);
-static void lv_display_alarm_create(lv_timer_t * timer);
+static void lv_display_alarm_create(lv_obj_t * parent);
 static void lv_display_stopwatch_create(lv_timer_t * timer);
 static void State_task(void * pvParameters);
 static void Charge_icon_task(void * pvParameters);
@@ -83,7 +83,7 @@ extern int weather_humidity;
 extern char description_array[4][10];
 bool set_weather_mode = 0;
 
-extern RTC_DATA_ATTR Mode_t Mode;
+extern Mode_t Mode;
 extern RTC_DATA_ATTR int bootcount;
 
 
@@ -129,8 +129,8 @@ void lv_task_modes(void)
 
     
     // lv_display_time_create(t1);
-    alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t4);
-    lv_timer_pause(alarm_timer);
+    // alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t4);
+    // lv_timer_pause(alarm_timer);
 
     stopwatch_timer = lv_timer_create(lv_display_stopwatch_create, 100, t5);
     lv_timer_pause(stopwatch_timer);
@@ -494,16 +494,16 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
 }
 
 
-static void lv_display_alarm_create(lv_timer_t * timer)
+static void lv_display_alarm_create(lv_obj_t * parent)
 {
     ESP_LOGI(TAG, "lv_display alarm");
 
     lv_obj_clean(t3);   // Clean 5 day forecast tab to increase performance
-    lv_obj_clean(timer->user_data);
+    lv_obj_clean(parent);
 
     static lv_style_t style_alarm_title;
     lv_style_init(&style_alarm_title);
-	lv_obj_t * label_alarm_title = lv_label_create(timer->user_data);
+	lv_obj_t * label_alarm_title = lv_label_create(parent);
     
     lv_style_set_text_font(&style_alarm_title, &lv_font_montserrat_24); 
     lv_style_set_text_color(&style_alarm_title, lv_color_white());
@@ -520,7 +520,7 @@ static void lv_display_alarm_create(lv_timer_t * timer)
 
     static lv_style_t style_alarm;
     lv_style_init(&style_alarm);
-	lv_obj_t * label_alarm = lv_label_create(timer->user_data);
+	lv_obj_t * label_alarm = lv_label_create(parent);
     
     lv_style_set_text_font(&style_alarm, &lv_font_montserrat_48); 
     lv_style_set_text_color(&style_alarm, lv_palette_main(LV_PALETTE_YELLOW));
@@ -531,7 +531,7 @@ static void lv_display_alarm_create(lv_timer_t * timer)
 
     lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
     
-    lv_obj_t * switch_img = lv_img_create(timer->user_data);
+    lv_obj_t * switch_img = lv_img_create(parent);
 
     if(alarm1.enabled)
         lv_img_set_src(switch_img, &switch_on_png);
@@ -668,13 +668,14 @@ static void State_task(void * pvParameters)
                     gpio_intr_enable(RESET_PIN);
                     ESP_LOGI(TAG, "Alarm State");
                     lv_tabview_set_act(tv, 4, LV_ANIM_ON);
-                    lv_timer_resume(alarm_timer);
+                    // lv_timer_resume(alarm_timer);
+                    lv_display_alarm_create(t4);
 
                     break;
 
                 case STOPWATCH_MODE:
                     
-                    lv_timer_pause(alarm_timer);
+                    // lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
                     lv_tabview_set_act(tv, 5, LV_ANIM_ON);
                     lv_timer_resume(stopwatch_timer);

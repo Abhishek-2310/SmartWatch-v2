@@ -172,7 +172,7 @@ void openweather_api_http(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-void get_weather_update(void)
+void weather_config(void)
 {
 	esp_err_t ret = nvs_flash_init();
 	if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -184,6 +184,6 @@ void get_weather_update(void)
 	// connect_wifi();
 	// if (wifi_connect_status)
 	// {
-        xTaskCreate(&openweather_api_http, "openweather_api_http", 8192, NULL, 1, NULL);
+    xTaskCreate(&openweather_api_http, "openweather_api_http", 8192, NULL, 1, NULL);
 	// }
 }

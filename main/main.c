@@ -71,7 +71,7 @@ TaskHandle_t NTP_Task_Handle;
  **********************/
 static void guiTask(void *pvParameter);
 // extern void example_lvgl_demo_ui(lv_disp_t *disp);
-extern void get_weather_update(void);
+extern void weather_config(void);
 extern void lv_task_modes(void);
 
 extern void button_config(void);
@@ -162,6 +162,11 @@ void app_main(void)
     //  * NOTE: When not using Wi-Fi nor Bluetooth you can pin the guiTask to core 0 */
     xTaskCreatePinnedToCore(guiTask, "gui", 4096, NULL, 1, NULL, 1);
 
+    // Task Configuration Functions 
+    deep_sleep_config();
+    alarm_config();
+    stopWatch_config();
+    
     // Connect to WiFi     
     ESP_LOGI(mainTag, "Connect to WiFi");
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
@@ -173,12 +178,9 @@ void app_main(void)
     // NTP Task
     xTaskCreate(NTP_Task, "NTP_Task", 1024*3, NULL, 1, &NTP_Task_Handle);
 
-    // configuration functions
-    get_weather_update();
-    deep_sleep_config();
-    alarm_config();
-    stopWatch_config();
+    // Weather Config
     battery_monitor_config();
+    weather_config();
 
     if(bootcount <= 1)
     {

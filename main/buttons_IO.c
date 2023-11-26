@@ -6,7 +6,7 @@
 static const char *TAG = "buttons";
 
 extern Alarm_t alarm1;
-RTC_DATA_ATTR Mode_t Mode = TIME_MODE;
+Mode_t Mode = TIME_MODE;
 const Mode_t Mode_Table[4] = {TIME_MODE,
                               WEATHER_MODE,
                               ALARM_MODE,
@@ -146,9 +146,20 @@ void Set_Task(void *params)
             if ((xTaskGetTickCount() - button_down_time) >= (LONG_PRESS_DELAY / portTICK_PERIOD_MS))
             {
                 ESP_LOGI(TAG, "Set Long Press");
-                alarm1.enabled = 1;
-                xTaskNotifyGive(AlarmTask_Handle);
-                ESP_LOGI(TAG, "Enabled Alarm");
+
+                switch (Mode)
+                {
+                    case ALARM_MODE:
+                        alarm1.enabled = true;
+                        xTaskNotifyGive(AlarmTask_Handle);
+                        ESP_LOGI(TAG, "Enabled Alarm");
+                        xTaskNotifyGive(StateTask_Handle);  // Change alarm state button to ON
+                        break;
+                    
+                    default:
+                        break;
+                }
+
                 button_pressed = false; // Release the button
                 block_task = true;
             }
@@ -188,6 +199,7 @@ void Set_Task(void *params)
                         ESP_LOGI(TAG, "hours: %d", alarm1.hours);
                         ESP_LOGI(TAG, "Minutes Inc Button pressed!, minutes: %d", alarm1.minutes);
                     }
+                    xTaskNotifyGive(StateTask_Handle);
 
                     break;
 
@@ -241,9 +253,20 @@ void Reset_Task(void *params)
             // Check if the button is held for a long time
             if ((xTaskGetTickCount() - button_down_time) >= (LONG_PRESS_DELAY / portTICK_PERIOD_MS))
             {
-                ESP_LOGI(TAG, "Reset Long Press");
-                alarm1.enabled = false;
-                ESP_LOGI(TAG, "Disabled Alarm");
+                ESP_LOGI(TAG, "Reset Long Press"); 
+
+                switch (Mode)
+                {
+                    case ALARM_MODE:
+                        alarm1.enabled = false;
+                        ESP_LOGI(TAG, "Disabled Alarm");
+                        xTaskNotifyGive(StateTask_Handle); // Change alarm state button to OFF
+                        break;
+                    
+                    default:
+                        break;
+                }
+
                 button_pressed = false; // Release the button
                 block_task = true;
             }
@@ -268,6 +291,7 @@ void Reset_Task(void *params)
 
                     set_hour = !set_hour;
                     ESP_LOGI(TAG, "set hour: %d", set_hour);
+                    xTaskNotifyGive(StateTask_Handle);
 
                     break;
 

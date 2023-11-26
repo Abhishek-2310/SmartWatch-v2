@@ -58,13 +58,16 @@ esp_err_t getStructFromNVS(const char *namespace, const char *key, Alarm_t *data
 
 void enterDeepSleep() {
     // Configure the sleep timer and enter deep sleep
-    ESP_LOGI(TAG, "Entering Deep sleep");
-
-    esp_err_t saveAlarm = saveStructToNVS("storage", "alarm", &alarm1);
-    if (saveAlarm == ESP_OK) {
-        printf("Struct saved to NVS\n");
-    } else {
-        printf("Failed to save struct to NVS\n");
+    printf("Entering Deep sleep\n");
+    // ESP_LOGI(TAG, "Entering Deep sleep");
+    if(alarm1.enabled)
+    {
+        esp_err_t saveAlarm = saveStructToNVS("storage", "alarm", &alarm1);
+        if (saveAlarm == ESP_OK) {
+            printf("Alarm Struct saved to NVS\n");
+        } else {
+            printf("Failed to save struct to NVS\n");
+        }
     }
     // esp_sleep_enable_timer_wakeup(INACTIVITY_TIMEOUT_SECONDS * uS_TO_S_FACTOR);
     esp_deep_sleep_start();
@@ -88,10 +91,19 @@ void setRTCAlarm(void)
     // else
     //     neg_hour_adjust = 0;
 
-    wakeup_time = (((alarm1.hours + neg_hour_adjust - (int8_t) timeinfo.tm_hour) * 3600 + (alarm1.minutes - (int8_t) timeinfo.tm_min ) * 60) - 30) * 1000000;
+    wakeup_time = (((alarm1.hours + neg_hour_adjust - (int8_t) timeinfo.tm_hour) * 3600 + (alarm1.minutes - (int8_t) timeinfo.tm_min ) * 60) - 40) * 1000000;
 
-    printf("wakeup time: %lld", wakeup_time);
-    esp_sleep_enable_timer_wakeup(wakeup_time);
+    printf("wakeup time: %lld\n", wakeup_time);
+    if(wakeup_time < 0)
+    {
+        ESP_LOGI(TAG, "Alarm turned OFF");
+        alarm1.enabled = false;
+    }
+    else
+    {
+        ESP_LOGI(TAG, "wakeup time set");
+        esp_sleep_enable_timer_wakeup(wakeup_time);
+    }
 }
 
 void watchActivityMonitor(void* pvParameter)
