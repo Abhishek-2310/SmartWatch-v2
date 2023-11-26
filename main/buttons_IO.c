@@ -29,7 +29,6 @@ extern TaskHandle_t AlarmTask_Handle;
 extern bool set_weather_mode;
 
 extern bool stopWatch_running;
-extern bool pause_watch;
 extern bool reset_watch;
 
 extern uint8_t deep_sleep_reset;
@@ -209,6 +208,7 @@ void Set_Task(void *params)
                     ESP_LOGI(TAG, "stopwatch state: %d", stopWatch_running);
                     if (stopWatch_running)
                         xTaskNotifyGive(StopWatchTask_Handle);
+                    xTaskNotifyGive(StateTask_Handle);
 
                     break;
 
@@ -301,6 +301,7 @@ void Reset_Task(void *params)
                     {
                         reset_watch = true;
                         xTaskNotifyGive(StopWatchTask_Handle);
+                        xTaskNotifyGive(StateTask_Handle);
                     }
                     break;
 

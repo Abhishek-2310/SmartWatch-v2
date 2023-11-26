@@ -13,7 +13,7 @@ TaskHandle_t AlarmTask_Handle;
 TaskHandle_t VibrationAlertTask_Handle;
 extern TaskHandle_t StateTask_Handle;
 
-extern RTC_DATA_ATTR Mode_t Mode;
+extern Mode_t Mode;
 
 
 void Vibration_Alert_Task(void * pvParameters)

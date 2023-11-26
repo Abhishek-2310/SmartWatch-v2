@@ -59,7 +59,7 @@ void stopwatch_task(void *pvParameters)
         printf("seconds: %d secs\n", stopWatch1.seconds);
         printf("centiSeconds: %d centisecs\n", stopWatch1.centiSeconds);
 
-        vTaskDelay(pdMS_TO_TICKS(250));
+        vTaskDelay(pdMS_TO_TICKS(300));
     }
 }
 

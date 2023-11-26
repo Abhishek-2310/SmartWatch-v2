@@ -67,8 +67,11 @@ LV_IMG_DECLARE(thunderstorm_img_png);
 LV_IMG_DECLARE(humidity_png);
 LV_IMG_DECLARE(wind_speed_png);
 
-LV_IMG_DECLARE(switch_on_png);
-LV_IMG_DECLARE(switch_off_png);
+LV_IMG_DECLARE(alarm_ON_orange_png);
+LV_IMG_DECLARE(alarm_OFF_orange_png);
+LV_IMG_DECLARE(alarm_orange_png);
+
+LV_IMG_DECLARE(stopwatch_outline_png);
 
 bool led1_state = false;
 bool led2_state = false;
@@ -89,6 +92,8 @@ extern RTC_DATA_ATTR int bootcount;
 
 extern Alarm_t alarm1;
 extern StopWatch_t stopWatch1;
+extern bool stopWatch_running;
+
 
 TaskHandle_t StateTask_Handle;
 TaskHandle_t ChargeIconTask_Handle;
@@ -132,12 +137,12 @@ void lv_task_modes(void)
     // alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t4);
     // lv_timer_pause(alarm_timer);
 
-    stopwatch_timer = lv_timer_create(lv_display_stopwatch_create, 100, t5);
+    stopwatch_timer = lv_timer_create(lv_display_stopwatch_create, 300, t5);
     lv_timer_pause(stopwatch_timer);
     // lv_display_weather_mode0_create(t2);
 
     // lv_timer_create(State_task, 5000, NULL);
-    xTaskCreatePinnedToCore(State_task, "State_task", 2048*2, NULL, 0, &StateTask_Handle, 1);
+    xTaskCreatePinnedToCore(State_task, "State_task", 2048*2, NULL, 1, &StateTask_Handle, 1);
     xTaskCreatePinnedToCore(Charge_icon_task, "Charge_icon_task", 2048, NULL, 0, &ChargeIconTask_Handle, 1);
 
     if(bootcount > 1)
@@ -365,7 +370,7 @@ static void lv_display_weather_mode0_create(lv_obj_t * parent)
 
     lv_Print_Weather_Logo(weather_status, parent, false);
     lv_img_set_zoom(weather_img, 320);
-    lv_obj_align(weather_img, LV_ALIGN_TOP_RIGHT, -15, 50);
+    lv_obj_align(weather_img, LV_ALIGN_TOP_RIGHT, -20, 60);
 
     char weather_temp_buffer[5];
 
@@ -501,46 +506,44 @@ static void lv_display_alarm_create(lv_obj_t * parent)
     lv_obj_clean(t3);   // Clean 5 day forecast tab to increase performance
     lv_obj_clean(parent);
 
-    static lv_style_t style_alarm_title;
-    lv_style_init(&style_alarm_title);
-	lv_obj_t * label_alarm_title = lv_label_create(parent);
-    
-    lv_style_set_text_font(&style_alarm_title, &lv_font_montserrat_24); 
-    lv_style_set_text_color(&style_alarm_title, lv_color_white());
-    lv_style_set_text_letter_space(&style_alarm_title, 2);
+    lv_obj_t * alarm_title_img = lv_img_create(parent);
+    lv_img_set_src(alarm_title_img, &alarm_orange_png);
+    lv_obj_set_size(alarm_title_img, 88, 87);
+    lv_img_set_zoom(alarm_title_img, 128);
+    lv_obj_align(alarm_title_img, LV_ALIGN_TOP_MID, 0, 30);
 
-    lv_obj_add_style(label_alarm_title, &style_alarm_title, 0);
-    lv_label_set_text(label_alarm_title, "Set alarm");  // set text
+    char alarm_buffer[15];
 
-    lv_obj_align(label_alarm_title, LV_ALIGN_TOP_MID, 0, 60);
-
-    char alarm_buffer[10];
-
-    snprintf(alarm_buffer, 10, "%02d:%02d", alarm1.hours, alarm1.minutes);
+    snprintf(alarm_buffer, 15, " %02d:%02d ", alarm1.hours, alarm1.minutes);
 
     static lv_style_t style_alarm;
     lv_style_init(&style_alarm);
 	lv_obj_t * label_alarm = lv_label_create(parent);
+
+    lv_style_set_radius(&style_alarm, 50);
+    lv_style_set_bg_opa(&style_alarm, LV_OPA_10);
+    // lv_style_set_border_width(&style_alarm, 10);
+    lv_style_set_bg_color(&style_alarm, lv_palette_lighten(LV_PALETTE_ORANGE, 1));
     
     lv_style_set_text_font(&style_alarm, &lv_font_montserrat_48); 
-    lv_style_set_text_color(&style_alarm, lv_palette_main(LV_PALETTE_YELLOW));
+    lv_style_set_text_color(&style_alarm, lv_palette_main(LV_PALETTE_ORANGE));
     lv_style_set_text_letter_space(&style_alarm, 2);
 
     lv_obj_add_style(label_alarm, &style_alarm, 0);
     lv_label_set_text(label_alarm, alarm_buffer);  // set text
 
-    lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 10);
     
-    lv_obj_t * switch_img = lv_img_create(parent);
+    lv_obj_t * alarm_state_img = lv_img_create(parent);
 
     if(alarm1.enabled)
-        lv_img_set_src(switch_img, &switch_on_png);
+        lv_img_set_src(alarm_state_img, &alarm_ON_orange_png);
     else
-        lv_img_set_src(switch_img, &switch_off_png);
+        lv_img_set_src(alarm_state_img, &alarm_OFF_orange_png);
 
-    lv_obj_set_size(switch_img, 127, 56);
-    lv_img_set_zoom(switch_img, 192);
-    lv_obj_align(switch_img, LV_ALIGN_BOTTOM_MID, 0, -40);
+    lv_obj_set_size(alarm_state_img, 64, 64);
+    lv_img_set_zoom(alarm_state_img, 192);
+    lv_obj_align(alarm_state_img, LV_ALIGN_BOTTOM_MID, 0, -20);
 }
 
 
@@ -550,35 +553,54 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
 
     lv_obj_clean(timer->user_data);
 
-    static lv_style_t style_alarm_title;
-    lv_style_init(&style_alarm_title);
-	lv_obj_t * label_alarm_title = lv_label_create(timer->user_data);
+    lv_obj_t * stopwatch_title_img = lv_img_create(timer->user_data);
+    lv_img_set_src(stopwatch_title_img, &stopwatch_outline_png);
+    lv_obj_set_size(stopwatch_title_img, 128, 133);
+    lv_img_set_zoom(stopwatch_title_img, 424);
+    lv_obj_align(stopwatch_title_img, LV_ALIGN_CENTER, 0, 5);
+
+
+    char stopwatch_buffer[11];
+
+    snprintf(stopwatch_buffer, 11, " %02d:%02d ", stopWatch1.minutes, stopWatch1.seconds);
+
+    static lv_style_t style_stopwatch;
+    lv_style_init(&style_stopwatch);
+	lv_obj_t * label_stopwatch = lv_label_create(timer->user_data);
+
+    lv_style_set_radius(&style_stopwatch, 20);
+    lv_style_set_bg_opa(&style_stopwatch, LV_OPA_10);
+    lv_style_set_bg_color(&style_stopwatch, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
     
-    lv_style_set_text_font(&style_alarm_title, &lv_font_montserrat_24); 
-    lv_style_set_text_color(&style_alarm_title, lv_color_white());
-    lv_style_set_text_letter_space(&style_alarm_title, 2);
+    lv_style_set_text_font(&style_stopwatch, &lv_font_montserrat_40); 
+    lv_style_set_text_color(&style_stopwatch, lv_color_white());
+    lv_style_set_text_letter_space(&style_stopwatch, 2);
 
-    lv_obj_add_style(label_alarm_title, &style_alarm_title, 0);
-    lv_label_set_text(label_alarm_title, "Stopwatch");  // set text
+    lv_obj_add_style(label_stopwatch, &style_stopwatch, 0);
+    lv_label_set_text(label_stopwatch, stopwatch_buffer);  // set text
 
-    lv_obj_align(label_alarm_title, LV_ALIGN_TOP_MID, 0, 60);
+    lv_obj_align(label_stopwatch, LV_ALIGN_CENTER, 0, 0);
 
-    char alarm_buffer[15];
 
-    snprintf(alarm_buffer, 15, "%02d:%02d:%02d", stopWatch1.minutes, stopWatch1.seconds, stopWatch1.centiSeconds);
+    char stopwatch_centi_buffer[6];
+    snprintf(stopwatch_centi_buffer, 6, " %02d ", stopWatch1.centiSeconds);
 
-    static lv_style_t style_alarm;
-    lv_style_init(&style_alarm);
-	lv_obj_t * label_alarm = lv_label_create(timer->user_data);
+    static lv_style_t style_stopwatch_centi;
+    lv_style_init(&style_stopwatch_centi);
+	lv_obj_t * label_stopwatch_centi = lv_label_create(timer->user_data);
+
+    lv_style_set_radius(&style_stopwatch_centi, 20);
+    lv_style_set_bg_opa(&style_stopwatch_centi, LV_OPA_10);
+    lv_style_set_bg_color(&style_stopwatch_centi, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
     
-    lv_style_set_text_font(&style_alarm, &lv_font_montserrat_36); 
-    lv_style_set_text_color(&style_alarm, lv_palette_main(LV_PALETTE_YELLOW));
-    lv_style_set_text_letter_space(&style_alarm, 2);
+    lv_style_set_text_font(&style_stopwatch_centi, &lv_font_montserrat_24); 
+    lv_style_set_text_color(&style_stopwatch_centi, lv_color_white());
+    lv_style_set_text_letter_space(&style_stopwatch_centi, 2);
 
-    lv_obj_add_style(label_alarm, &style_alarm, 0);
-    lv_label_set_text(label_alarm, alarm_buffer);  // set text
+    lv_obj_add_style(label_stopwatch_centi, &style_stopwatch_centi, 0);
+    lv_label_set_text(label_stopwatch_centi, stopwatch_centi_buffer);  // set text
 
-    lv_obj_align(label_alarm, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(label_stopwatch_centi, LV_ALIGN_CENTER, 30, 45);
     
 }
 
@@ -635,7 +657,7 @@ static void State_task(void * pvParameters)
                     break;
 
                 case TIME_MODE:
-                    lv_timer_pause(stopwatch_timer);
+                    // lv_timer_pause(stopwatch_timer);
                     gpio_intr_disable(SET_PIN);
                     gpio_intr_disable(RESET_PIN);
 
@@ -678,11 +700,19 @@ static void State_task(void * pvParameters)
                     // lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
                     lv_tabview_set_act(tv, 5, LV_ANIM_ON);
-                    lv_timer_resume(stopwatch_timer);
+                    if(stopWatch_running)
+                    {
+                        lv_timer_resume(stopwatch_timer);
+                    }
+                    else
+                    {
+                        lv_timer_pause(stopwatch_timer);
+                        lv_display_stopwatch_create(stopwatch_timer);
+                    }
 
                     break;
             }
-            ESP_LOGI(TAG, "total min free memory: %ld", esp_get_minimum_free_heap_size());
+            // ESP_LOGI(TAG, "total min free memory: %ld", esp_get_minimum_free_heap_size());
             ESP_LOGI(TAG, "Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
 
             xSemaphoreGive(xGuiSemaphore);
