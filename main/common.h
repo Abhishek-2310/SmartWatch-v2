@@ -51,6 +51,4 @@ typedef enum
     STOPWATCH_MODE
 }Mode_t;
 
-
-
 #endif

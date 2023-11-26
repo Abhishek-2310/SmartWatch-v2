@@ -16,6 +16,8 @@ idf_component_register(SRCS main.c
                             alarm_icons/alarm_ON_orange_png.c
                             alarm_icons/alarm_orange_png.c
                             stopwatch_icons/stopwatch_outline_png.c
+                            signal_icons/arrow_left_png.c
+                            signal_icons/arrow_right_png.c
                             ntp_time.c 
                             weather.c 
                             alarm.c 

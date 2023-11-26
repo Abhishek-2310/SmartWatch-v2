@@ -76,6 +76,7 @@ LV_IMG_DECLARE(stopwatch_outline_png);
 bool led1_state = false;
 bool led2_state = false;
 
+char * day_str;
 extern char strftime_buf[64];
 
 extern char weather_status[10];
@@ -84,6 +85,8 @@ extern double weather_speed;
 extern int weather_pressure;
 extern int weather_humidity;
 extern char description_array[4][10];
+char days_of_the_week[7][4] = {"MON\0","TUE\0","WED\0","THU\0","FRI\0","SAT\0","SUN\0"};
+uint8_t weather_mode1_set_index = 0;
 bool set_weather_mode = 0;
 
 extern Mode_t Mode;
@@ -152,6 +155,18 @@ void lv_task_modes(void)
     }
 }
 
+static void weather_mode1_set_days()
+{
+    for(uint8_t i = 0; i < 7; i++)
+    {
+        if(memcmp(day_str, days_of_the_week[i], 4) == 0)
+        {
+            weather_mode1_set_index = i;
+            break;
+        }
+    }
+    
+}
 
 static void lv_Print_Weather_Logo(char* weather_descp, lv_obj_t * screen, bool shrink_img)
 {
@@ -292,7 +307,7 @@ static void lv_display_time_create(lv_obj_t * parent)
     ESP_LOGI(TAG, "The current date/time in Canada is: %s", strftime_buf);
 
     // String slicing to get day, date and time
-    char * day_str = strftime_buf;
+    day_str = strftime_buf;
     *(day_str + 3) = '\0';
 
     int i = 0;
@@ -366,6 +381,7 @@ static void lv_display_weather_mode0_create(lv_obj_t * parent)
 
     ESP_LOGI(TAG, "lv_display weather mode 0");
 
+    lv_obj_clean(t3);   // Clean 5 day forecast tab to increase performance
     lv_obj_clean(parent);
 
     lv_Print_Weather_Logo(weather_status, parent, false);
@@ -442,7 +458,6 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     
     ESP_LOGI(TAG, "lv_display weather mode 1");
 
-    lv_obj_clean(t3);   // Clean 5 day forecast tab to increase performance
     lv_obj_clean(parent);
 
     static lv_style_t style_weather_status_mode1;
@@ -451,51 +466,52 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     lv_style_set_text_color(&style_weather_status_mode1, lv_palette_main(LV_PALETTE_YELLOW));
     lv_style_set_text_letter_space(&style_weather_status_mode1, 2);
 
+    weather_mode1_set_days();
 
 	lv_obj_t * label_weather_status_mode1_day0 = lv_label_create(parent);
     lv_obj_add_style(label_weather_status_mode1_day0, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day0, "Today");  // set text
-    lv_obj_align(label_weather_status_mode1_day0, LV_ALIGN_LEFT_MID, 10, -100);
+    lv_label_set_text(label_weather_status_mode1_day0, days_of_the_week[(weather_mode1_set_index % 7)]);  // set text
+    lv_obj_align(label_weather_status_mode1_day0, LV_ALIGN_LEFT_MID, 10, -90);
 
     lv_Print_Weather_Logo(weather_status, parent, true);
-    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -100);
+    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -90);
 
 
 	lv_obj_t * label_weather_status_mode1_day1 = lv_label_create(parent);
     lv_obj_add_style(label_weather_status_mode1_day1, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day1, "Tomorrow");  // set text
-    lv_obj_align(label_weather_status_mode1_day1, LV_ALIGN_LEFT_MID, 10, -50);
+    lv_label_set_text(label_weather_status_mode1_day1, days_of_the_week[(weather_mode1_set_index + 1) % 7]);  // set text
+    lv_obj_align(label_weather_status_mode1_day1, LV_ALIGN_LEFT_MID, 10, -40);
 
     lv_Print_Weather_Logo(description_array[0], parent, true);
-    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -50);
+    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -40);
 
     // snprintf(weather_mode1_display_buffer[2], 30, "Day %d   %s\n", 2, description_array[1]);
 
 	lv_obj_t * label_weather_status_mode1_day2 = lv_label_create(parent);
     lv_obj_add_style(label_weather_status_mode1_day2, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day2, "Day 3");  // set text
-    lv_obj_align(label_weather_status_mode1_day2, LV_ALIGN_LEFT_MID, 10, 0);
+    lv_label_set_text(label_weather_status_mode1_day2, days_of_the_week[(weather_mode1_set_index + 2) % 7]);  // set text
+    lv_obj_align(label_weather_status_mode1_day2, LV_ALIGN_LEFT_MID, 10, 10);
 
     lv_Print_Weather_Logo(description_array[1], parent, true);
-    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 0);
+    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 10);
     // snprintf(weather_mode1_display_buffer[3], 30, "Day %d   %s\n", 3, description_array[2]);
 
 	lv_obj_t * label_weather_status_mode1_day3 = lv_label_create(parent);
     lv_obj_add_style(label_weather_status_mode1_day3, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day3, "Day 4");  // set text
-    lv_obj_align(label_weather_status_mode1_day3, LV_ALIGN_LEFT_MID, 10, 50);
+    lv_label_set_text(label_weather_status_mode1_day3, days_of_the_week[(weather_mode1_set_index + 3) % 7]);  // set text
+    lv_obj_align(label_weather_status_mode1_day3, LV_ALIGN_LEFT_MID, 10, 60);
 
     lv_Print_Weather_Logo(description_array[2], parent, true);
-    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 50);
+    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 60);
     // snprintf(weather_mode1_display_buffer[4], 30, "Day %d   %s", 4, description_array[3]);
 
 	lv_obj_t * label_weather_status_mode1_day4 = lv_label_create(parent);
     lv_obj_add_style(label_weather_status_mode1_day4, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day4, "Day 5");  // set text
-    lv_obj_align(label_weather_status_mode1_day4, LV_ALIGN_LEFT_MID, 10, 100);
+    lv_label_set_text(label_weather_status_mode1_day4, days_of_the_week[(weather_mode1_set_index + 4) % 7]);  // set text
+    lv_obj_align(label_weather_status_mode1_day4, LV_ALIGN_LEFT_MID, 10, 110);
 
     lv_Print_Weather_Logo(description_array[3], parent, true);
-    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 100);
+    lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 110);
 }
 
 
@@ -608,12 +624,31 @@ static void Charge_icon_task(void * pvParameters)
 {
     lv_obj_t * charge_img = lv_img_create(lv_scr_act());
 
+    static lv_anim_t animation_template;
+    static lv_style_t label_style;
+    lv_obj_t * battery_low_label = NULL;
+
+    lv_anim_init(&animation_template);
+    lv_anim_set_delay(&animation_template, 1000);           /*Wait 1 second to start the first scroll*/
+    lv_anim_set_repeat_delay(&animation_template, 3000);    /*Repeat the scroll 3 seconds after the label scrolls back to the initial position*/
+
+    /*Initialize the label style with the animation template*/
+    lv_style_init(&label_style);
+    lv_style_set_anim(&label_style, &animation_template);
+    lv_style_set_text_font(&label_style, &lv_font_montserrat_12); 
+    lv_style_set_text_color(&label_style, lv_color_white());
+    lv_style_set_text_letter_space(&label_style, 2);
+
+    
     while(1)
     {
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(60000));
 
         if(pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY))
         {
+            if(battery_low_label != NULL)
+                lv_obj_del(battery_low_label);
+            
             if(voltage >= 2640)                         // greater than 80 
                 lv_img_set_src(charge_img, &full_charge_icon_png);
             else if(voltage >= 1650 && voltage < 2640)  // 50 - 80
@@ -621,17 +656,28 @@ static void Charge_icon_task(void * pvParameters)
             else if(voltage >= 660 && voltage < 1650)  // 20 -50
                 lv_img_set_src(charge_img, &fifty_charge_icon_png);
             else if(voltage > 0 && voltage < 660)     // 0 - 20
+            {
                 lv_img_set_src(charge_img, &twenty_charge_icon_png);
 
+                battery_low_label = lv_label_create(lv_scr_act());
+                lv_label_set_long_mode(battery_low_label, LV_LABEL_LONG_SCROLL_CIRCULAR);      /*Circular scroll*/
+                lv_label_set_recolor(battery_low_label, true);                      /*Enable re-coloring by commands in the text*/
+                lv_obj_set_width(battery_low_label, 150);
+                lv_label_set_text(battery_low_label, "Hey Boss! Battery #ff0000 LOW     ");
+                lv_obj_add_style(battery_low_label, &label_style, LV_STATE_DEFAULT);
+                lv_obj_align(battery_low_label, LV_ALIGN_TOP_LEFT, 20, 35);
+            }
+                
             lv_obj_set_size(charge_img, 56, 32);
             lv_img_set_zoom(charge_img, 128);
             lv_obj_align(charge_img, LV_ALIGN_TOP_RIGHT, -10, 25);
+
             xSemaphoreGive(xGuiSemaphore);
         }
         ESP_LOGI("Charge_icon_task", "stack left: %d", uxTaskGetStackHighWaterMark(NULL));
     }
 
-    lv_obj_clean(charge_img);
+    lv_obj_del(charge_img);
     vTaskDelete(NULL);
 }
 
@@ -649,8 +695,8 @@ static void State_task(void * pvParameters)
             switch(Mode)
             {
                 case ESP_COMMS_MODE:
-                    gpio_intr_enable(SET_PIN);
-                    gpio_intr_enable(RESET_PIN);
+                    // gpio_intr_enable(SET_PIN);
+                    // gpio_intr_enable(RESET_PIN);
                     lv_tabview_set_act(tv, 0, LV_ANIM_ON);
                     lv_display_esp_comms_create(t0);
 
@@ -658,8 +704,8 @@ static void State_task(void * pvParameters)
 
                 case TIME_MODE:
                     // lv_timer_pause(stopwatch_timer);
-                    gpio_intr_disable(SET_PIN);
-                    gpio_intr_disable(RESET_PIN);
+                    // gpio_intr_disable(SET_PIN);
+                    // gpio_intr_disable(RESET_PIN);
 
                     ESP_LOGI(TAG, "Time State");
                     lv_tabview_set_act(tv, 1, LV_ANIM_ON);
@@ -669,7 +715,7 @@ static void State_task(void * pvParameters)
 
                 case WEATHER_MODE:
                     ESP_LOGI(TAG, "Weather State");
-                    gpio_intr_enable(SET_PIN);
+                    // gpio_intr_enable(SET_PIN);
 
                     if(set_weather_mode == 0)
                     {
@@ -687,7 +733,7 @@ static void State_task(void * pvParameters)
                     break;
 
                 case ALARM_MODE:
-                    gpio_intr_enable(RESET_PIN);
+                    // gpio_intr_enable(RESET_PIN);
                     ESP_LOGI(TAG, "Alarm State");
                     lv_tabview_set_act(tv, 4, LV_ANIM_ON);
                     // lv_timer_resume(alarm_timer);
