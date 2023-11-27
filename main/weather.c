@@ -32,13 +32,13 @@ bool all_chunks_received = false;
 char weather_status[10];
 double weather_temp = 0.0;
 double weather_speed = 0.0;
-int weather_pressure = 0;
 int weather_humidity = 0;
 
+double weather_temp_array[4];
 char description_array[4][10];
 uint8_t description_index = 0;
 
-void get_temp_pressure_humidity(const char *json_string)
+void get_temp_humidity(const char *json_string)
 {
    cJSON *root = cJSON_Parse(json_string);
     cJSON *list = cJSON_GetObjectItem(root, "list");
@@ -60,25 +60,25 @@ void get_temp_pressure_humidity(const char *json_string)
             if(i == 0)
             {
                 double temp1 = cJSON_GetObjectItem(main, "temp")->valuedouble;
-                int pressure1 = cJSON_GetObjectItem(main, "pressure")->valueint;
                 int humidity1 = cJSON_GetObjectItem(main, "humidity")->valueint;
                 const char* description1 = cJSON_GetObjectItem(cJSON_GetArrayItem(weather, 0), "main")->valuestring;
                 double speed1 = cJSON_GetObjectItem(wind, "speed")->valuedouble;
 
                 weather_temp = temp1;
-                weather_pressure = pressure1;
                 weather_humidity = humidity1;
                 weather_speed = speed1;
                 memcpy(weather_status, description1, strlen(description1));
                 weather_status[strlen(description1)] = '\0';
-                printf("Status: %s\nTemperature: %0.00f°C\nPressure: %d hPa\nHumidity: %d%%\nSpeed: %0.0f mph\n", weather_status, temp1, pressure1, humidity1, speed1);
+                printf("Status: %s\nTemperature: %0.00f°C\nHumidity: %d%%\nSpeed: %0.0f mph\n", weather_status, temp1, humidity1, speed1);
             }
             else
             {            
                 const char* description2 = cJSON_GetObjectItem(cJSON_GetArrayItem(weather, 0), "main")->valuestring;
+                double temp2 = cJSON_GetObjectItem(main, "temp")->valuedouble;
                 memcpy(description_array[description_index], description2, strlen(description2));
                 description_array[description_index][strlen(description2)] = '\0';
-                printf("Day: %d Weather: %s\n", i/8, description_array[description_index]);
+                weather_temp_array[description_index] = temp2;
+                printf("Day: %d Temp: %0.0f°C Weather: %s\n", i/8, weather_temp_array[description_index], description_array[description_index]);
                 description_index = (description_index + 1) % 4;
             }
         }
@@ -87,10 +87,10 @@ void get_temp_pressure_humidity(const char *json_string)
     cJSON_Delete(root);
     ESP_LOGI(TAG, "root deleted!");
     
-    if (response_data) {
-        free(response_data);
-        ESP_LOGI(TAG, "response_data freed!");
-    }
+    // if (response_data) {
+    //     free(response_data);
+    //     ESP_LOGI(TAG, "response_data freed!");
+    // }
 
     // Reset Response parameters
     response_data = NULL;
@@ -110,7 +110,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
         case HTTP_EVENT_ON_FINISH:
             all_chunks_received = true;
             // ESP_LOGI("OpenWeatherAPI", "Received data: %s", response_data);
-            get_temp_pressure_humidity(response_data);
+            get_temp_humidity(response_data);
             break;
         default:
             break;

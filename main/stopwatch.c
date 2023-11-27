@@ -4,6 +4,7 @@
 #include "esp_timer.h"
 #include "common.h"
 
+extern uint8_t deep_sleep_reset;
 
 esp_timer_handle_t timer;
 bool stopWatch_running = false;
@@ -13,6 +14,7 @@ uint64_t elapsed_time = 0;
 StopWatch_t stopWatch1;
 
 TaskHandle_t StopWatchTask_Handle;
+extern TaskHandle_t StateTask_Handle;
 
 
 void timer_callback(void* arg) {
@@ -52,12 +54,15 @@ void stopwatch_task(void *pvParameters)
             }
         }
 
+        deep_sleep_reset = 1;
         stopWatch1.centiSeconds = (elapsed_time) % 100;
         stopWatch1.seconds = (elapsed_time / 100) % 60;
         stopWatch1.minutes = (elapsed_time / ( 100 * 60 )) % 60;
         printf("minutes: %d mins\n", stopWatch1.minutes);
         printf("seconds: %d secs\n", stopWatch1.seconds);
         printf("centiSeconds: %d centisecs\n", stopWatch1.centiSeconds);
+
+        xTaskNotifyGive(StateTask_Handle);
 
         vTaskDelay(pdMS_TO_TICKS(300));
     }

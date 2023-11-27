@@ -2,6 +2,7 @@
  *      INCLUDES
  *********************/
 #include <string.h>
+#include <math.h>
 #include <sys/time.h>
 #include <ctype.h>
 
@@ -20,7 +21,7 @@
 static void lv_display_time_create(lv_obj_t * parent);
 static void lv_display_weather_mode0_create(lv_obj_t * parent);
 static void lv_display_alarm_create(lv_obj_t * parent);
-static void lv_display_stopwatch_create(lv_timer_t * timer);
+static void lv_display_stopwatch_create(lv_obj_t * parent);
 static void State_task(void * pvParameters);
 static void Charge_icon_task(void * pvParameters);
 
@@ -71,8 +72,6 @@ LV_IMG_DECLARE(alarm_ON_orange_png);
 LV_IMG_DECLARE(alarm_OFF_orange_png);
 LV_IMG_DECLARE(alarm_orange_png);
 
-LV_IMG_DECLARE(stopwatch_outline_png);
-
 bool led1_state = false;
 bool led2_state = false;
 
@@ -82,9 +81,9 @@ extern char strftime_buf[64];
 extern char weather_status[10];
 extern double weather_temp;
 extern double weather_speed;
-extern int weather_pressure;
 extern int weather_humidity;
 extern char description_array[4][10];
+extern double weather_temp_array[4];
 char days_of_the_week[7][4] = {"MON\0","TUE\0","WED\0","THU\0","FRI\0","SAT\0","SUN\0"};
 uint8_t weather_mode1_set_index = 0;
 bool set_weather_mode = 0;
@@ -140,8 +139,8 @@ void lv_task_modes(void)
     // alarm_timer = lv_timer_create(lv_display_alarm_create, 500, t4);
     // lv_timer_pause(alarm_timer);
 
-    stopwatch_timer = lv_timer_create(lv_display_stopwatch_create, 300, t5);
-    lv_timer_pause(stopwatch_timer);
+    // stopwatch_timer = lv_timer_create(lv_display_stopwatch_create, 300, t5);
+    // lv_timer_pause(stopwatch_timer);
     // lv_display_weather_mode0_create(t2);
 
     // lv_timer_create(State_task, 5000, NULL);
@@ -468,46 +467,61 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
 
     weather_mode1_set_days();
 
+    char day1_buffer[30];
+    snprintf(day1_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index % 7)], weather_temp);
+
 	lv_obj_t * label_weather_status_mode1_day0 = lv_label_create(parent);
+    lv_label_set_recolor(label_weather_status_mode1_day0, true);                      /*Enable re-coloring by commands in the text*/
     lv_obj_add_style(label_weather_status_mode1_day0, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day0, days_of_the_week[(weather_mode1_set_index % 7)]);  // set text
+    lv_label_set_text(label_weather_status_mode1_day0, day1_buffer);  // set text
     lv_obj_align(label_weather_status_mode1_day0, LV_ALIGN_LEFT_MID, 10, -90);
 
     lv_Print_Weather_Logo(weather_status, parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -90);
 
+    char day2_buffer[30];
+    snprintf(day2_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 1) % 7], weather_temp_array[0]);
 
 	lv_obj_t * label_weather_status_mode1_day1 = lv_label_create(parent);
+    lv_label_set_recolor(label_weather_status_mode1_day1, true);
     lv_obj_add_style(label_weather_status_mode1_day1, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day1, days_of_the_week[(weather_mode1_set_index + 1) % 7]);  // set text
+    lv_label_set_text(label_weather_status_mode1_day1, day2_buffer);  // set text
     lv_obj_align(label_weather_status_mode1_day1, LV_ALIGN_LEFT_MID, 10, -40);
 
     lv_Print_Weather_Logo(description_array[0], parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -40);
 
-    // snprintf(weather_mode1_display_buffer[2], 30, "Day %d   %s\n", 2, description_array[1]);
+    char day3_buffer[30];
+    snprintf(day3_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 2) % 7], weather_temp_array[1]);
 
 	lv_obj_t * label_weather_status_mode1_day2 = lv_label_create(parent);
+    lv_label_set_recolor(label_weather_status_mode1_day2, true);
     lv_obj_add_style(label_weather_status_mode1_day2, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day2, days_of_the_week[(weather_mode1_set_index + 2) % 7]);  // set text
+    lv_label_set_text(label_weather_status_mode1_day2, day3_buffer);  // set text
     lv_obj_align(label_weather_status_mode1_day2, LV_ALIGN_LEFT_MID, 10, 10);
 
     lv_Print_Weather_Logo(description_array[1], parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 10);
-    // snprintf(weather_mode1_display_buffer[3], 30, "Day %d   %s\n", 3, description_array[2]);
+    
+    char day4_buffer[30];
+    snprintf(day4_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 3) % 7], weather_temp_array[2]);
 
 	lv_obj_t * label_weather_status_mode1_day3 = lv_label_create(parent);
+    lv_label_set_recolor(label_weather_status_mode1_day3, true);
     lv_obj_add_style(label_weather_status_mode1_day3, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day3, days_of_the_week[(weather_mode1_set_index + 3) % 7]);  // set text
+    lv_label_set_text(label_weather_status_mode1_day3, day4_buffer);  // set text
     lv_obj_align(label_weather_status_mode1_day3, LV_ALIGN_LEFT_MID, 10, 60);
 
     lv_Print_Weather_Logo(description_array[2], parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 60);
-    // snprintf(weather_mode1_display_buffer[4], 30, "Day %d   %s", 4, description_array[3]);
+    
+    char day5_buffer[30];
+    snprintf(day5_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 4) % 7], weather_temp_array[3]);
 
 	lv_obj_t * label_weather_status_mode1_day4 = lv_label_create(parent);
+    lv_label_set_recolor(label_weather_status_mode1_day4, true);
     lv_obj_add_style(label_weather_status_mode1_day4, &style_weather_status_mode1, 0);
-    lv_label_set_text(label_weather_status_mode1_day4, days_of_the_week[(weather_mode1_set_index + 4) % 7]);  // set text
+    lv_label_set_text(label_weather_status_mode1_day4, day5_buffer);  // set text
     lv_obj_align(label_weather_status_mode1_day4, LV_ALIGN_LEFT_MID, 10, 110);
 
     lv_Print_Weather_Logo(description_array[3], parent, true);
@@ -563,17 +577,29 @@ static void lv_display_alarm_create(lv_obj_t * parent)
 }
 
 
-static void lv_display_stopwatch_create(lv_timer_t * timer)
+static void lv_display_stopwatch_create(lv_obj_t * parent)
 {
     ESP_LOGI(TAG, "lv_display stopwatch");
 
-    lv_obj_clean(timer->user_data);
+    int16_t arc_length = ((int16_t) ceil((100.0 / 60) * stopWatch1.seconds)) % 100; 
+    lv_obj_clean(parent);
 
-    lv_obj_t * stopwatch_title_img = lv_img_create(timer->user_data);
-    lv_img_set_src(stopwatch_title_img, &stopwatch_outline_png);
-    lv_obj_set_size(stopwatch_title_img, 128, 133);
-    lv_img_set_zoom(stopwatch_title_img, 424);
-    lv_obj_align(stopwatch_title_img, LV_ALIGN_CENTER, 0, 5);
+    static lv_style_t arc_style_bg, arc_style_fg;
+    lv_style_init(&arc_style_bg);
+    lv_style_init(&arc_style_fg);
+
+    lv_style_set_arc_color(&arc_style_bg, lv_palette_main(LV_PALETTE_GREY));
+    lv_style_set_arc_width(&arc_style_bg, 6);
+
+    lv_obj_t * arc = lv_arc_create(parent);
+    lv_obj_add_style(arc, &arc_style_bg, 0);
+    lv_obj_set_size(arc, 200, 200);
+    lv_arc_set_rotation(arc, 270);
+    lv_arc_set_bg_angles(arc, 0, 360);
+    lv_arc_set_value(arc, arc_length);
+    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);   /*Be sure the knob is not displayed*/
+    lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE);  /*To not allow adjusting by click*/
+    lv_obj_align(arc, LV_ALIGN_CENTER, 0, 10);
 
 
     char stopwatch_buffer[11];
@@ -582,7 +608,7 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
 
     static lv_style_t style_stopwatch;
     lv_style_init(&style_stopwatch);
-	lv_obj_t * label_stopwatch = lv_label_create(timer->user_data);
+	lv_obj_t * label_stopwatch = lv_label_create(parent);
 
     lv_style_set_radius(&style_stopwatch, 20);
     lv_style_set_bg_opa(&style_stopwatch, LV_OPA_10);
@@ -595,7 +621,7 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
     lv_obj_add_style(label_stopwatch, &style_stopwatch, 0);
     lv_label_set_text(label_stopwatch, stopwatch_buffer);  // set text
 
-    lv_obj_align(label_stopwatch, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(label_stopwatch, LV_ALIGN_CENTER, 0, 10);
 
 
     char stopwatch_centi_buffer[6];
@@ -603,7 +629,7 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
 
     static lv_style_t style_stopwatch_centi;
     lv_style_init(&style_stopwatch_centi);
-	lv_obj_t * label_stopwatch_centi = lv_label_create(timer->user_data);
+	lv_obj_t * label_stopwatch_centi = lv_label_create(parent);
 
     lv_style_set_radius(&style_stopwatch_centi, 20);
     lv_style_set_bg_opa(&style_stopwatch_centi, LV_OPA_10);
@@ -616,8 +642,9 @@ static void lv_display_stopwatch_create(lv_timer_t * timer)
     lv_obj_add_style(label_stopwatch_centi, &style_stopwatch_centi, 0);
     lv_label_set_text(label_stopwatch_centi, stopwatch_centi_buffer);  // set text
 
-    lv_obj_align(label_stopwatch_centi, LV_ALIGN_CENTER, 30, 45);
+    lv_obj_align(label_stopwatch_centi, LV_ALIGN_CENTER, 0, 50);
     
+    // vTaskDelay(pdMS_TO_TICKS(100));
 }
 
 static void Charge_icon_task(void * pvParameters)
@@ -695,17 +722,14 @@ static void State_task(void * pvParameters)
             switch(Mode)
             {
                 case ESP_COMMS_MODE:
-                    // gpio_intr_enable(SET_PIN);
-                    // gpio_intr_enable(RESET_PIN);
+                    ESP_LOGI(TAG, "ESP Comms State");
+
                     lv_tabview_set_act(tv, 0, LV_ANIM_ON);
                     lv_display_esp_comms_create(t0);
 
                     break;
 
                 case TIME_MODE:
-                    // lv_timer_pause(stopwatch_timer);
-                    // gpio_intr_disable(SET_PIN);
-                    // gpio_intr_disable(RESET_PIN);
 
                     ESP_LOGI(TAG, "Time State");
                     lv_tabview_set_act(tv, 1, LV_ANIM_ON);
@@ -715,7 +739,6 @@ static void State_task(void * pvParameters)
 
                 case WEATHER_MODE:
                     ESP_LOGI(TAG, "Weather State");
-                    // gpio_intr_enable(SET_PIN);
 
                     if(set_weather_mode == 0)
                     {
@@ -743,18 +766,10 @@ static void State_task(void * pvParameters)
 
                 case STOPWATCH_MODE:
                     
-                    // lv_timer_pause(alarm_timer);
                     ESP_LOGI(TAG, "StopWatch State");
                     lv_tabview_set_act(tv, 5, LV_ANIM_ON);
-                    if(stopWatch_running)
-                    {
-                        lv_timer_resume(stopwatch_timer);
-                    }
-                    else
-                    {
-                        lv_timer_pause(stopwatch_timer);
-                        lv_display_stopwatch_create(stopwatch_timer);
-                    }
+
+                    lv_display_stopwatch_create(t5);
 
                     break;
             }
