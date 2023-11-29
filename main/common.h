@@ -5,10 +5,10 @@
  *      DEFINES
  *********************/
 #define DISPLAY_POWER 27
-#define SET_PIN 19
-#define MODE_PIN  26
-#define RESET_PIN 18
-#define COMMS_PIN 25
+#define SET_PIN 26
+#define MODE_PIN  19
+#define RESET_PIN 25
+#define COMMS_PIN 18
 #define MOTOR_PIN 23
 #define DEBOUNCE_DELAY 50   // in ms
 /*********************
