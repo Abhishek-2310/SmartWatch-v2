@@ -182,14 +182,16 @@ void app_main(void)
     battery_monitor_config();
     weather_config();
 
-    if(bootcount <= 1)
+    if(bootcount <= 1)  // First boot 
     {
         alarm1.hours = 0;
         alarm1.minutes = 0;
         alarm1.enabled = false;
+        ESP_ERROR_CHECK(nvs_flash_erase());
     }
 
     // printf("alarm app_main: hours=%d, minutes=%d, enabled=%d\n", alarm1.hours, alarm1.minutes, alarm1.enabled);
+
 }
 
 

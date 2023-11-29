@@ -9,6 +9,8 @@
 #include "common.h"
 #include "time.h"
 
+#include "protocol_examples_common.h"
+
 #define INACTIVITY_TIMEOUT_SECONDS 60  // Adjust as needed
 #define uS_TO_S_FACTOR 1000000
 
@@ -58,7 +60,6 @@ esp_err_t getStructFromNVS(const char *namespace, const char *key, Alarm_t *data
 
 void enterDeepSleep() {
     // Configure the sleep timer and enter deep sleep
-    printf("Entering Deep sleep\n");
     // ESP_LOGI(TAG, "Entering Deep sleep");
     if(alarm1.enabled)
     {
@@ -69,7 +70,10 @@ void enterDeepSleep() {
             printf("Failed to save struct to NVS\n");
         }
     }
-    // esp_sleep_enable_timer_wakeup(INACTIVITY_TIMEOUT_SECONDS * uS_TO_S_FACTOR);
+    printf("Disonnecting WiFi\n");
+    ESP_ERROR_CHECK( example_disconnect() );
+
+    printf("Entering Deep sleep\n");
     esp_deep_sleep_start();
 }
 
@@ -157,7 +161,7 @@ void deep_sleep_config(void)
     }
     // Initialize your hardware and application
     
-    esp_sleep_enable_ext0_wakeup(MODE_PIN, 0); 
+    esp_sleep_enable_ext0_wakeup(SET_PIN, 0); 
 
     // Create a FreeRTOS task to monitor watch activity
     xTaskCreate(watchActivityMonitor, "watch_activity_task", 2048, NULL, 1, NULL);

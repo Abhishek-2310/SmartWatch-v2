@@ -59,7 +59,7 @@ void NTP_Task(void *pvParameter)
         // ESP_LOGI(TAG, "NTP stack used: %d", uxTaskGetStackHighWaterMark(NULL));
         
 
-        vTaskDelay(20000);
+        vTaskDelay(30000);
     }
 
     vTaskDelete(NULL);
