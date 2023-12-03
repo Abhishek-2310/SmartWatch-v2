@@ -94,7 +94,7 @@ extern RTC_DATA_ATTR int bootcount;
 
 extern Alarm_t alarm1;
 extern StopWatch_t stopWatch1;
-extern bool stopWatch_running;
+// extern bool stopWatch_running;
 
 
 TaskHandle_t StateTask_Handle;

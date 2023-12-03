@@ -6,6 +6,8 @@
 static const char *TAG = "buttons";
 
 extern Alarm_t alarm1;
+extern StopWatch_t stopWatch1;
+
 Mode_t Mode = TIME_MODE;
 const Mode_t Mode_Table[4] = {TIME_MODE,
                               WEATHER_MODE,
@@ -28,7 +30,7 @@ extern TaskHandle_t AlarmTask_Handle;
 
 extern bool set_weather_mode;
 
-extern bool stopWatch_running;
+// extern bool stopWatch_running;
 extern bool reset_watch;
 
 extern uint8_t deep_sleep_reset;
@@ -204,9 +206,9 @@ void Set_Task(void *params)
 
                 case STOPWATCH_MODE:
                     // start and stop stopwatch
-                    stopWatch_running = !stopWatch_running;
-                    ESP_LOGI(TAG, "stopwatch state: %d", stopWatch_running);
-                    if (stopWatch_running)
+                    stopWatch1.isRunning = !stopWatch1.isRunning;
+                    ESP_LOGI(TAG, "stopwatch state: %d", stopWatch1.isRunning);
+                    if (stopWatch1.isRunning)
                         xTaskNotifyGive(StopWatchTask_Handle);
                     xTaskNotifyGive(StateTask_Handle);
 
@@ -297,7 +299,7 @@ void Reset_Task(void *params)
 
                 case STOPWATCH_MODE:
                     // start and stop stopwatch
-                    if (!stopWatch_running)
+                    if (!stopWatch1.isRunning)
                     {
                         reset_watch = true;
                         xTaskNotifyGive(StopWatchTask_Handle);

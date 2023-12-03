@@ -36,6 +36,7 @@ typedef struct
 {
     uint8_t minutes;
     uint8_t seconds;
+    bool isRunning;
     /* data */
 }StopWatch_t;
 /**********************

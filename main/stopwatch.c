@@ -7,7 +7,7 @@
 extern uint8_t deep_sleep_reset;
 
 esp_timer_handle_t timer;
-bool stopWatch_running = false;
+// bool stopWatch_running = false;
 bool start_watch = false;
 bool reset_watch = false;
 uint64_t elapsed_time = 0;
@@ -28,7 +28,7 @@ void stopwatch_task(void *pvParameters)
 {
     while (1) 
     {
-        if (!stopWatch_running) 
+        if (!stopWatch1.isRunning) 
         {
             if(start_watch)
             {
@@ -69,6 +69,7 @@ void stopwatch_task(void *pvParameters)
 
 void stopWatch_config()
 {
+    stopWatch1.isRunning = false;
     esp_timer_create_args_t timer_config = {
         .callback = &timer_callback,
         .name = "stopwatch_timer"
