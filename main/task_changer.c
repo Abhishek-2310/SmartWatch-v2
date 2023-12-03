@@ -622,27 +622,6 @@ static void lv_display_stopwatch_create(lv_obj_t * parent)
     lv_label_set_text(label_stopwatch, stopwatch_buffer);  // set text
 
     lv_obj_align(label_stopwatch, LV_ALIGN_CENTER, 0, 10);
-
-
-    char stopwatch_centi_buffer[6];
-    snprintf(stopwatch_centi_buffer, 6, " %02d ", stopWatch1.centiSeconds);
-
-    static lv_style_t style_stopwatch_centi;
-    lv_style_init(&style_stopwatch_centi);
-	lv_obj_t * label_stopwatch_centi = lv_label_create(parent);
-
-    // lv_style_set_radius(&style_stopwatch_centi, 20);
-    // lv_style_set_bg_opa(&style_stopwatch_centi, LV_OPA_10);
-    // lv_style_set_bg_color(&style_stopwatch_centi, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
-    
-    lv_style_set_text_font(&style_stopwatch_centi, &lv_font_montserrat_24); 
-    lv_style_set_text_color(&style_stopwatch_centi, lv_color_white());
-    lv_style_set_text_letter_space(&style_stopwatch_centi, 2);
-
-    lv_obj_add_style(label_stopwatch_centi, &style_stopwatch_centi, 0);
-    lv_label_set_text(label_stopwatch_centi, stopwatch_centi_buffer);  // set text
-
-    lv_obj_align(label_stopwatch_centi, LV_ALIGN_CENTER, 0, 50);
     
     // vTaskDelay(pdMS_TO_TICKS(100));
 }

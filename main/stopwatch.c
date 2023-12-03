@@ -49,22 +49,20 @@ void stopwatch_task(void *pvParameters)
             else
             {            
                 printf("Stopwatch started\n");
-                esp_timer_start_periodic(timer, 10000); // 1 centisecond
+                esp_timer_start_periodic(timer, 1000000); // 1 centisecond
                 start_watch = true;
             }
         }
 
         deep_sleep_reset = 1;
-        stopWatch1.centiSeconds = (elapsed_time) % 100;
-        stopWatch1.seconds = (elapsed_time / 100) % 60;
-        stopWatch1.minutes = (elapsed_time / ( 100 * 60 )) % 60;
+        stopWatch1.seconds = (elapsed_time ) % 60;
+        stopWatch1.minutes = (elapsed_time / 60) % 60;
         printf("minutes: %d mins\n", stopWatch1.minutes);
         printf("seconds: %d secs\n", stopWatch1.seconds);
-        printf("centiSeconds: %d centisecs\n", stopWatch1.centiSeconds);
 
         xTaskNotifyGive(StateTask_Handle);
 
-        vTaskDelay(pdMS_TO_TICKS(300));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
