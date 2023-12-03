@@ -84,7 +84,7 @@ extern double weather_speed;
 extern int weather_humidity;
 extern char description_array[4][10];
 extern double weather_temp_array[4];
-char days_of_the_week[7][4] = {"MON\0","TUE\0","WED\0","THU\0","FRI\0","SAT\0","SUN\0"};
+char days_of_the_week[7][6] = {"MON\0","TUE \0","WED\0","THU \0","FRI  \0","SAT  \0","SUN \0"};
 uint8_t weather_mode1_set_index = 0;
 bool set_weather_mode = 0;
 
@@ -94,7 +94,6 @@ extern RTC_DATA_ATTR int bootcount;
 
 extern Alarm_t alarm1;
 extern StopWatch_t stopWatch1;
-// extern bool stopWatch_running;
 
 
 TaskHandle_t StateTask_Handle;
@@ -158,7 +157,7 @@ static void weather_mode1_set_days()
 {
     for(uint8_t i = 0; i < 7; i++)
     {
-        if(memcmp(day_str, days_of_the_week[i], 4) == 0)
+        if(memcmp(day_str, days_of_the_week[i], 3) == 0)
         {
             weather_mode1_set_index = i;
             break;
@@ -468,7 +467,12 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     weather_mode1_set_days();
 
     char day1_buffer[30];
-    snprintf(day1_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index % 7)], weather_temp);
+    char neg_temp_padding[10] = "      \0";
+
+    if(weather_temp < 0)
+        memcpy(neg_temp_padding, "    \0", 5);
+
+    snprintf(day1_buffer, 30, "%s%s#ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index % 7)], neg_temp_padding, weather_temp);
 
 	lv_obj_t * label_weather_status_mode1_day0 = lv_label_create(parent);
     lv_label_set_recolor(label_weather_status_mode1_day0, true);                      /*Enable re-coloring by commands in the text*/
@@ -479,8 +483,13 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     lv_Print_Weather_Logo(weather_status, parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -90);
 
+    if(weather_temp_array[0] < 0)
+        memcpy(neg_temp_padding, "    \0", 5);
+    else
+        memcpy(neg_temp_padding, "      \0", 7);
+
     char day2_buffer[30];
-    snprintf(day2_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 1) % 7], weather_temp_array[0]);
+    snprintf(day2_buffer, 30, "%s%s#ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 1) % 7], neg_temp_padding, weather_temp_array[0]);
 
 	lv_obj_t * label_weather_status_mode1_day1 = lv_label_create(parent);
     lv_label_set_recolor(label_weather_status_mode1_day1, true);
@@ -491,8 +500,13 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
     lv_Print_Weather_Logo(description_array[0], parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, -40);
 
+    if(weather_temp_array[1] < 0)
+        memcpy(neg_temp_padding, "    \0", 5);
+    else
+        memcpy(neg_temp_padding, "      \0", 7);
+
     char day3_buffer[30];
-    snprintf(day3_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 2) % 7], weather_temp_array[1]);
+    snprintf(day3_buffer, 30, "%s%s#ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 2) % 7], neg_temp_padding, weather_temp_array[1]);
 
 	lv_obj_t * label_weather_status_mode1_day2 = lv_label_create(parent);
     lv_label_set_recolor(label_weather_status_mode1_day2, true);
@@ -502,9 +516,14 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
 
     lv_Print_Weather_Logo(description_array[1], parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 10);
+
+    if(weather_temp_array[2] < 0)
+        memcpy(neg_temp_padding, "    \0", 5);
+    else
+        memcpy(neg_temp_padding, "      \0", 7);
     
     char day4_buffer[30];
-    snprintf(day4_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 3) % 7], weather_temp_array[2]);
+    snprintf(day4_buffer, 30, "%s%s#ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 3) % 7], neg_temp_padding, weather_temp_array[2]);
 
 	lv_obj_t * label_weather_status_mode1_day3 = lv_label_create(parent);
     lv_label_set_recolor(label_weather_status_mode1_day3, true);
@@ -514,9 +533,14 @@ static void lv_display_weather_mode1_create(lv_obj_t * parent)
 
     lv_Print_Weather_Logo(description_array[2], parent, true);
     lv_obj_align(weather_img, LV_ALIGN_RIGHT_MID, 20, 60);
+
+    if(weather_temp_array[3] < 0)
+        memcpy(neg_temp_padding, "    \0", 5);
+    else
+        memcpy(neg_temp_padding, "      \0", 7);
     
     char day5_buffer[30];
-    snprintf(day5_buffer, 30, "%s      #ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 4) % 7], weather_temp_array[3]);
+    snprintf(day5_buffer, 30, "%s%s#ffffff %0.0f°", days_of_the_week[(weather_mode1_set_index + 4) % 7], neg_temp_padding, weather_temp_array[3]);
 
 	lv_obj_t * label_weather_status_mode1_day4 = lv_label_create(parent);
     lv_label_set_recolor(label_weather_status_mode1_day4, true);

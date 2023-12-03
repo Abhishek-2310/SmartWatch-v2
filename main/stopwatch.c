@@ -7,7 +7,6 @@
 extern uint8_t deep_sleep_reset;
 
 esp_timer_handle_t timer;
-// bool stopWatch_running = false;
 bool start_watch = false;
 bool reset_watch = false;
 uint64_t elapsed_time = 0;
@@ -18,9 +17,7 @@ extern TaskHandle_t StateTask_Handle;
 
 
 void timer_callback(void* arg) {
-    // if (stopWatch_running) {
         elapsed_time++;
-    // }
 }
 
 
@@ -49,7 +46,7 @@ void stopwatch_task(void *pvParameters)
             else
             {            
                 printf("Stopwatch started\n");
-                esp_timer_start_periodic(timer, 1000000); // 1 centisecond
+                esp_timer_start_periodic(timer, 1000000); // 1 second from milliseconds
                 start_watch = true;
             }
         }
@@ -77,9 +74,4 @@ void stopWatch_config()
     esp_timer_create(&timer_config, &timer);
 
     xTaskCreate(stopwatch_task, "stopwatch_task", 2048, NULL, 0, &StopWatchTask_Handle);
-
-    // esp_timer_start_periodic(timer, 10000); // 1 centisecond
-    // start_time = esp_timer_get_time();
-
-    // stopWatch_running = !stopWatch_running;
 }

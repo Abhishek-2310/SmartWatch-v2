@@ -30,7 +30,6 @@ extern TaskHandle_t AlarmTask_Handle;
 
 extern bool set_weather_mode;
 
-// extern bool stopWatch_running;
 extern bool reset_watch;
 
 extern uint8_t deep_sleep_reset;
