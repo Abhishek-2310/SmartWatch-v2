@@ -144,7 +144,7 @@ void lv_task_modes(void)
     // lv_display_weather_mode0_create(t2);
 
     // lv_timer_create(State_task, 5000, NULL);
-    xTaskCreatePinnedToCore(State_task, "State_task", 2048*2, NULL, 1, &StateTask_Handle, 1);
+    xTaskCreatePinnedToCore(State_task, "State_task", 1024*3, NULL, 1, &StateTask_Handle, 1);
     xTaskCreatePinnedToCore(Charge_icon_task, "Charge_icon_task", 2048, NULL, 0, &ChargeIconTask_Handle, 1);
 
     if(bootcount > 1)
@@ -581,8 +581,8 @@ static void lv_display_stopwatch_create(lv_obj_t * parent)
 {
     ESP_LOGI(TAG, "lv_display stopwatch");
 
-    int16_t arc_length = ((int16_t) ceil((100.0 / 60) * stopWatch1.seconds)) % 100; 
     lv_obj_clean(parent);
+    int16_t arc_length = ((int16_t) ceil((100.0 / 60) * stopWatch1.seconds)) % 100; 
 
     static lv_style_t arc_style_bg, arc_style_fg;
     lv_style_init(&arc_style_bg);
@@ -610,9 +610,9 @@ static void lv_display_stopwatch_create(lv_obj_t * parent)
     lv_style_init(&style_stopwatch);
 	lv_obj_t * label_stopwatch = lv_label_create(parent);
 
-    lv_style_set_radius(&style_stopwatch, 20);
-    lv_style_set_bg_opa(&style_stopwatch, LV_OPA_10);
-    lv_style_set_bg_color(&style_stopwatch, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
+    // lv_style_set_radius(&style_stopwatch, 20);
+    // lv_style_set_bg_opa(&style_stopwatch, LV_OPA_10);
+    // lv_style_set_bg_color(&style_stopwatch, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
     
     lv_style_set_text_font(&style_stopwatch, &lv_font_montserrat_40); 
     lv_style_set_text_color(&style_stopwatch, lv_color_white());
@@ -631,9 +631,9 @@ static void lv_display_stopwatch_create(lv_obj_t * parent)
     lv_style_init(&style_stopwatch_centi);
 	lv_obj_t * label_stopwatch_centi = lv_label_create(parent);
 
-    lv_style_set_radius(&style_stopwatch_centi, 20);
-    lv_style_set_bg_opa(&style_stopwatch_centi, LV_OPA_10);
-    lv_style_set_bg_color(&style_stopwatch_centi, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
+    // lv_style_set_radius(&style_stopwatch_centi, 20);
+    // lv_style_set_bg_opa(&style_stopwatch_centi, LV_OPA_10);
+    // lv_style_set_bg_color(&style_stopwatch_centi, lv_palette_lighten(LV_PALETTE_LIGHT_GREEN, 1));
     
     lv_style_set_text_font(&style_stopwatch_centi, &lv_font_montserrat_24); 
     lv_style_set_text_color(&style_stopwatch_centi, lv_color_white());
@@ -714,7 +714,7 @@ static void State_task(void * pvParameters)
 
     while(1)
     {
-        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(20000));
 
 
         if(pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY))
@@ -770,12 +770,12 @@ static void State_task(void * pvParameters)
                     lv_tabview_set_act(tv, 5, LV_ANIM_ON);
 
                     lv_display_stopwatch_create(t5);
-
                     break;
             }
             // ESP_LOGI(TAG, "total min free memory: %ld", esp_get_minimum_free_heap_size());
-            ESP_LOGI(TAG, "Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-
+            ESP_LOGI(TAG, "Total Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
+            ESP_LOGI("State_task", "free memory: %d", uxTaskGetStackHighWaterMark(NULL));     
+    
             xSemaphoreGive(xGuiSemaphore);
         }
 

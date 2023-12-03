@@ -77,7 +77,7 @@ void stopWatch_config()
     };
     esp_timer_create(&timer_config, &timer);
 
-    xTaskCreate(stopwatch_task, "stopwatch_task", 2048, NULL, 5, &StopWatchTask_Handle);
+    xTaskCreate(stopwatch_task, "stopwatch_task", 2048, NULL, 0, &StopWatchTask_Handle);
 
     // esp_timer_start_periodic(timer, 10000); // 1 centisecond
     // start_time = esp_timer_get_time();
