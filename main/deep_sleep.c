@@ -15,7 +15,7 @@
 #define uS_TO_S_FACTOR 1000000
 
 // #define MODE_PIN 26
-
+extern bool wifi_connected;
 uint8_t deep_sleep_reset;
 extern Alarm_t alarm1;
 
@@ -71,7 +71,8 @@ void enterDeepSleep() {
         }
     }
     printf("Disonnecting WiFi\n");
-    ESP_ERROR_CHECK( example_disconnect() );
+    if(wifi_connected)
+        ESP_ERROR_CHECK( example_disconnect() );
 
     printf("Entering Deep sleep\n");
     esp_deep_sleep_start();

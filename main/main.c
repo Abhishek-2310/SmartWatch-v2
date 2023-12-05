@@ -59,6 +59,7 @@ static const char * mainTag = "app_main";
  **********************/
 
 RTC_DATA_ATTR int bootcount = 0;
+bool wifi_connected =false;
 
 extern Alarm_t alarm1;
 /**********************
@@ -167,13 +168,17 @@ void app_main(void)
     alarm_config();
     stopWatch_config();
     
-    // Connect to WiFi     
-    ESP_LOGI(mainTag, "Connect to WiFi");
+    // Connect to Network     
+    ESP_LOGI(mainTag, "Connect to Network");
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
-    ESP_ERROR_CHECK(example_connect());
+    int ret = example_connect();
+    if(ret == ESP_OK)
+        wifi_connected = true;
+    else
+        ESP_LOGI(mainTag, "Could not connect to Network");
 
     // NTP Task
     xTaskCreate(NTP_Task, "NTP_Task", 1024*3, NULL, 1, &NTP_Task_Handle);
