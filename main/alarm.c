@@ -24,6 +24,7 @@ void Vibration_Alert_Task(void * pvParameters)
         if(!alarm1.enabled || !alarm_match)
         {
             ESP_LOGI(TAG, "Vibration task blocked!");
+            gpio_set_level(MOTOR_PIN, 0);
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         }
         ESP_LOGI(TAG, "Vibration task running! %d", alarm1.enabled);

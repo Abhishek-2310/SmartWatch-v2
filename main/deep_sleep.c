@@ -96,7 +96,7 @@ void setRTCAlarm(void)
     // else
     //     neg_hour_adjust = 0;
 
-    wakeup_time = (((alarm1.hours + neg_hour_adjust - (int8_t) timeinfo.tm_hour) * 3600 + (alarm1.minutes - (int8_t) timeinfo.tm_min ) * 60) - 40) * 1000000;
+    wakeup_time = (((alarm1.hours + neg_hour_adjust - (int8_t) timeinfo.tm_hour) * 3600 + (alarm1.minutes - (int8_t) timeinfo.tm_min ) * 60) - 50) * 1000000;
 
     printf("wakeup time: %lld\n", wakeup_time);
     if(wakeup_time < 0)
