@@ -145,7 +145,7 @@ static void mqtt_app_start(void)
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
     
-    vTaskDelay(100);   // enough delay to publish and subscribe before stopped
+    vTaskDelay(500);   // enough delay to publish and subscribe before stopped
 
     ESP_LOGI(TAG, "Disconnecting...");
     esp_mqtt_client_disconnect(client);
