@@ -11,14 +11,23 @@ It offers:
 * provides real-time weather updates, keeping you informed and prepared for changing conditions.
 * simple home automation application using MQTT protocol
 
-## Drivers
+<br></br>
 
+## Middlewares & Drivers
+### FreeRTOS 
+[FreeRTOS](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos.html) is a real-time operating system kernel designed for embedded systems. It allows you to run multiple tasks concurrently, each with its own priority, making it ideal for applications where timing is crucial.
+
+### LVGL
+[LittlevGL](https://github.com/lvgl/lvgl) is an open-source graphics library that provides everything you need to create a graphical user interface (GUI) on embedded systems. When integrated with FreeRTOS on ESP32, LVGL allows you to build sophisticated and visually appealing user interfaces.
+
+### LCD Drivers
 [esp_lcd](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/lcd.html) provides several panel drivers out-of box, e.g. ST7789, SSD1306, NT35510. However, there're a lot of other panels on the market, it's beyond `esp_lcd` component's responsibility to include them all.
 
-This example shows how to use ST7789 display driver from Component manager in esp-idf project. These components are using API provided by `esp_lcd` component. This example will draw a fancy dash board with the LVGL library. For more information about porting the LVGL library, you can also refer to [another lvgl porting example](../i80_controller/README.md).
-
+<br></br>
 
 ## How to use the example
+This example shows how to use ST7789 display driver from Component manager in esp-idf project. These components are using API provided by `esp_lcd` component. This example will draw a fancy dash board with the LVGL library. For more information about porting the LVGL library, you can also refer to [another lvgl porting example](../i80_controller/README.md).
+
 
 ### Hardware Required
 
@@ -31,7 +40,7 @@ This example shows how to use ST7789 display driver from Component manager in es
 The connection between ESP Board and the LCD is as follows:
 
 ```
-       ESP Board                       GC9A01/ILI9341 Panel + TOUCH
+       ESP Chip                         ST7789 Panel + TOUCH
 ┌──────────────────────┐              ┌────────────────────┐
 │             GND      ├─────────────►│ GND                │
 │                      │              │                    │
