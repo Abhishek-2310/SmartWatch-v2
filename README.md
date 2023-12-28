@@ -27,7 +27,7 @@ It offers:
 
 ## How to use the example
 ```
-hllo
+git clone https://github.com/Abhishek-2310/SmartWatch-v2.git
 ```
 This example shows how to use ST7789 display driver from Component manager in esp-idf project. These components are using API provided by `esp_lcd` component. This example will draw a fancy dash board with the LVGL library. For more information about porting the LVGL library, you can also refer to [another lvgl porting example](../i80_controller/README.md).
 
@@ -83,29 +83,7 @@ The first time you run `idf.py` for the example will cost extra time as the buil
 
 See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
 
-### Example Output
-
-```bash
-...
-I (409) cpu_start: Starting scheduler on APP CPU.
-I (419) example: Turn off LCD backlight
-I (419) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
-I (429) example: Initialize SPI bus
-I (439) example: Install panel IO
-I (439) gpio: GPIO[5]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
-I (449) example: Install GC9A01 panel driver
-I (459) gpio: GPIO[3]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
-I (589) gpio: GPIO[0]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
-I (589) example: Initialize touch controller STMPE610
-I (589) STMPE610: TouchPad ID: 0x0811
-I (589) STMPE610: TouchPad Ver: 0x03
-I (599) example: Turn on LCD backlight
-I (599) example: Initialize LVGL library
-I (609) example: Register display driver to LVGL
-I (619) example: Install LVGL tick timer
-I (619) example: Display LVGL Meter Widget
-...
-```
+## Pictures
 
 
 ## Troubleshooting
@@ -113,4 +91,8 @@ I (619) example: Display LVGL Meter Widget
 * Why the LCD doesn't light up?
   * Check the backlight's turn-on level, and update it in `EXAMPLE_LCD_BK_LIGHT_ON_LEVEL`
 
-For any technical queries, please open an [issue] (https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+## Contributing
+Contributions are welcome! Feel free to open issues, submit pull requests, or provide feedback.
+
+## License
+This project is licensed under the MIT License.
