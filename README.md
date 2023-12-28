@@ -26,14 +26,20 @@ It offers:
 <br></br>
 
 ## How to use the example
+```
+hllo
+```
 This example shows how to use ST7789 display driver from Component manager in esp-idf project. These components are using API provided by `esp_lcd` component. This example will draw a fancy dash board with the LVGL library. For more information about porting the LVGL library, you can also refer to [another lvgl porting example](../i80_controller/README.md).
 
 
 ### Hardware Required
 
 * An ESP32 WROOM 32 SoC Module
-* An GC9A01/ILI9341/ST7789 LCD panel, with SPI interface (with/without STMPE610 SPI touch)
-* An USB cable for power supply and programming
+* A ST7789 LCD panel, with SPI interface (with/without STMPE610 SPI touch)
+* A LiPo battery / port accessible to power supply and programming
+* MCP73871 Battery management module
+* Vibration motor
+* Custom PCB
 
 ### Hardware Connection
 
