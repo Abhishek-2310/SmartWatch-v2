@@ -99,7 +99,7 @@ See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/l
 <br></br>
 
 ## Contributing
-Contributions are welcome! Feel free to open issues, submit pull requests, or provide feedback.
+More features can be added in the future and contributions are welcome! Feel free to open issues, submit pull requests, or provide feedback.
 
 <br></br>
 
