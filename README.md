@@ -83,17 +83,25 @@ The first time you run `idf.py` for the example will cost extra time as the buil
 
 See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
 
+<br></br>
+
 ## Results
 <p align="center">
 <img src = "https://github.com/Abhishek-2310/SmartWatch-v2/blob/master/SmartWatch.png" width = "500" height = "350"></p>
+
+<br></br>
 
 ## Troubleshooting
 
 * Why the LCD doesn't light up?
   * Check the backlight's turn-on level, and update it in `EXAMPLE_LCD_BK_LIGHT_ON_LEVEL`
 
+<br></br>
+
 ## Contributing
 Contributions are welcome! Feel free to open issues, submit pull requests, or provide feedback.
+
+<br></br>
 
 ## License
 This project is licensed under the MIT License.
