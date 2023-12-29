@@ -85,7 +85,7 @@ See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/l
 
 ## Results
 <p align="center">
-<img src = "https://github.com/Abhishek-2310/SmartWatch-v2/blob/master/SmartWatch.png" width = "500" height = "300"></p>
+<img src = "https://github.com/Abhishek-2310/SmartWatch-v2/blob/master/SmartWatch.png" width = "500" height = "350"></p>
 
 ## Troubleshooting
 
