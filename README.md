@@ -83,8 +83,9 @@ The first time you run `idf.py` for the example will cost extra time as the buil
 
 See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
 
-## Pictures
-
+## Results
+<p align="center">
+<img src = "https://user-images.githubusercontent.com/9260214/28747595-19a41090-7471-11e7-826c-42c28ea7ae6e.jpeg" width = "500" height = "300"></p>
 
 ## Troubleshooting
 
